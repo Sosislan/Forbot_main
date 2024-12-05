@@ -23,6 +23,7 @@ def create_markup():
     markup.add(telebot.types.KeyboardButton('Оновити API ключ'))
     markup.add(telebot.types.KeyboardButton('Оновити пошукове слово'))
     markup.add(telebot.types.KeyboardButton('Запустити пошук'))
+    markup.add(telebot.types.KeyboardButton('Назад'))
     return markup
 markup_stop = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
 markup_stop_button = telebot.types.KeyboardButton('    ')
@@ -177,6 +178,16 @@ def send_messages_to_users(message):
             get_message_from_admin(message)
 
 # Подключение к базе данных и создание таблицы, если она не существует
+with sq.connect("User_chanel.db") as con:
+    cur = con.cursor()
+    # Створюємо таблицю для користувачів
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_chanel (
+            user_id INTEGER,
+            name_chanel TEXT,
+            id_chanel TEXT
+        )
+    """)
 with sq.connect("User_data.db") as con:
     cur = con.cursor()
     # Створюємо таблицю для користувачів
@@ -428,29 +439,77 @@ def main(message):
                 cur.execute("SELECT num_newchanel FROM users WHERE id = ?", (message.from_user.id,))
                 chanel_num = cur.fetchone()[0]
                 if chanel_num < 20:
-                    bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
-                    print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
-                    process_channels(message, False)  # Викликаємо функцію обробки каналів
+                    with sq.connect("User_chanel.db") as con:
+                        cur = con.cursor()
+                        cur.execute("SELECT name_chanel, id_chanel FROM user_chanel WHERE user_id = ?",
+                                    (message.from_user.id,))
+                        result = cur.fetchone()
+
+                        if result:  # Якщо є результат
+                            print(
+                                f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                            name_chanel, id_chanel = result
+                            channel_id = id_chanel
+                            channel_name = name_chanel
+                            youtube_link = f'https://www.youtube.com/channel/{channel_id}'
+
+                            # Відправляємо канал користувачу
+                            bot.send_message(
+                                message.chat.id,
+                                f"Канал: {channel_name}\nПосилання: {youtube_link}"
+                            )
+                            # Відправляємо повідомлення з випадковим текстом
+                            bot.send_message(message.chat.id, get_random_message(channel_name), reply_markup=markup)
+                        else:
+                            bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                            print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                            process_channels(message, False)  # Викликаємо функцію обробки каналів
                 else:
                     with sq.connect("Chanels_base.db") as con:
                         cur = con.cursor()
                         # Отримуємо значення num_buy для користувача
                         cur.execute("SELECT searchchannels FROM users WHERE id = ?", (message.from_user.id,))
                         searchchannels = cur.fetchone()[0]
-                    if searchchannels == 0:
-                        bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
-                        bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
-                        print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
-                    else:
-                        bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
-                        print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
-                        process_channels(message, False)  # Викликаємо функцію обробки каналів
-                        cur.execute("""
-                                                    UPDATE users
-                                                    SET searchchannels = searchchannels - 1
-                                                    WHERE id = ?
-                                                """, (message.from_user.id,))
-                        con.commit()
+                    with sq.connect("User_chanel.db") as con:
+                        cur = con.cursor()
+                        cur.execute("SELECT name_chanel, id_chanel FROM user_chanel WHERE user_id = ?",
+                                    (message.from_user.id,))
+                        result = cur.fetchone()
+
+                        if result:  # Якщо є результат
+                            print(
+                                f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                            name_chanel, id_chanel = result
+                            channel_id = id_chanel
+                            channel_name = name_chanel
+                            youtube_link = f'https://www.youtube.com/channel/{channel_id}'
+
+                            # Відправляємо канал користувачу
+                            bot.send_message(
+                                message.chat.id,
+                                f"Канал: {channel_name}\nПосилання: {youtube_link}"
+                            )
+                            # Відправляємо повідомлення з випадковим текстом
+                            cur.execute(
+                                "DELETE FROM user_chanel WHERE user_id = ? AND name_chanel = ? AND id_chanel = ?",
+                                (message.from_user.id, name_chanel, id_chanel))
+                            con.commit()
+                            bot.send_message(message.chat.id, get_random_message(channel_name), reply_markup=markup)
+                        else:
+                            if searchchannels == 0:
+                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
+                                bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
+                                print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
+                            else:
+                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                                process_channels(message, False)  # Викликаємо функцію обробки каналів
+                                cur.execute("""
+                                                            UPDATE users
+                                                            SET searchchannels = searchchannels - 1
+                                                            WHERE id = ?
+                                                        """, (message.from_user.id,))
+                                con.commit()
         elif start_ros == 1:
             channel_message = message.text
             bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
@@ -460,6 +519,19 @@ def main(message):
             bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
         elif message.text == 'Що таке Api-key?':
             bot.send_message(message.chat.id, f'{Text[0]}', reply_markup=markup)
+            video_path = "IMG_7671.MP4"
+
+            try:
+                # Відкриваємо відеофайл у двійковому режимі
+                with open(video_path, 'rb') as video:
+                    bot.send_video(message.chat.id, video, caption="Ось приклад!")
+                print(f"Відео успішно надіслано користувачеві {message.chat.id}.")
+            except FileNotFoundError:
+                bot.send_message(message.chat.id, "Відеофайл не знайдено.")
+                print("Помилка: Відеофайл не знайдено.")
+            except Exception as e:
+                bot.send_message(message.chat.id, "Не вдалося надіслати відео.")
+                print(f"Помилка: {e}")
         elif message.text == 'Хто такий фрідж?':
             bot.send_message(message.chat.id, f'{Text[1]}', reply_markup=markup)
         elif message.text == 'Реклама':
@@ -502,9 +574,34 @@ def main(message):
 
     # Якщо num_buy = 1, перевіряємо текст повідомлення
     if message.text == 'Новий канал':
-        bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
-        print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
-        process_channels(message, True)  # Викликаємо функцію обробки каналів
+        with sq.connect("User_chanel.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT name_chanel, id_chanel FROM user_chanel WHERE user_id = ?",
+                        (message.from_user.id,))
+            result = cur.fetchone()
+
+            if result:  # Якщо є результат
+                print(
+                    f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                name_chanel, id_chanel = result
+                channel_id = id_chanel
+                channel_name = name_chanel
+                youtube_link = f'https://www.youtube.com/channel/{channel_id}'
+
+                # Відправляємо канал користувачу
+                bot.send_message(
+                    message.chat.id,
+                    f"Канал: {channel_name}\nПосилання: {youtube_link}"
+                )
+                # Відправляємо повідомлення з випадковим текстом
+                cur.execute("DELETE FROM user_chanel WHERE user_id = ? AND name_chanel = ? AND id_chanel = ?",
+                            (message.from_user.id, name_chanel, id_chanel))
+                con.commit()
+                bot.send_message(message.chat.id, get_random_message(channel_name), reply_markup=markup)
+            else:
+                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                process_channels(message, True)  # Викликаємо функцію обробки каналів
     elif message.text == 'Реферальна програма':
         bot.send_message(message.chat.id, '''
 Не забувай про реферальну систему нашого бота!
@@ -515,6 +612,19 @@ def main(message):
         bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
     elif message.text == 'Що таке Api-key?':
         bot.send_message(message.chat.id, f'{Text[0]}', reply_markup=markup)
+        video_path = "IMG_7671.MP4"
+
+        try:
+            # Відкриваємо відеофайл у двійковому режимі
+            with open(video_path, 'rb') as video:
+                bot.send_video(message.chat.id, video, caption="Ось приклад!")
+            print(f"Відео успішно надіслано користувачеві {message.chat.id}.")
+        except FileNotFoundError:
+            bot.send_message(message.chat.id, "Відеофайл не знайдено.")
+            print("Помилка: Відеофайл не знайдено.")
+        except Exception as e:
+            bot.send_message(message.chat.id, "Не вдалося надіслати відео.")
+            print(f"Помилка: {e}")
     elif message.text == 'Хто такий фрідж?':
         bot.send_message(message.chat.id, f'{Text[1]}', reply_markup=markup)
     elif message.text == 'Реклама':
@@ -717,6 +827,10 @@ def save_inactive_channel(channel_id, title, subscriber_count, total_watch_hours
         file.write(f"{channel_id}, {title}, {subscriber_count}, {total_watch_hours} годин\n")
         print(f"Неактивний канал збережено: {title} (ID: {channel_id}), підписників: {subscriber_count}, годин перегляду: {total_watch_hours}")
         bot.send_message(message.chat.id, f"Неактивний канал збережено. Ви отримали +1 до доступу.")
+        with sq.connect("User_chanel.db") as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO user_chanel (user_id, name_chanel, id_chanel) VALUES (?, ?, ?)", (message.chat.id, str(title), str(channel_id)))
+            con.commit()
         with sq.connect("Chanels_base.db") as con:
             cur = con.cursor()
             # Отримуємо значення num_buy для користувача
