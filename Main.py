@@ -18,6 +18,12 @@ Ref_chanel = telebot.types.KeyboardButton('Реферальна програма
 info_chanel = telebot.types.KeyboardButton('Інформація')
 markup.add(New_search, New_chanel, Ref_chanel, info_chanel)
 
+def create_markup():
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(telebot.types.KeyboardButton('Оновити API ключ'))
+    markup.add(telebot.types.KeyboardButton('Оновити пошукове слово'))
+    markup.add(telebot.types.KeyboardButton('Запустити пошук'))
+    return markup
 markup_stop = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
 markup_stop_button = telebot.types.KeyboardButton('    ')
 markup_stop.add(markup_stop_button)
@@ -171,6 +177,17 @@ def send_messages_to_users(message):
             get_message_from_admin(message)
 
 # Подключение к базе данных и создание таблицы, если она не существует
+with sq.connect("User_data.db") as con:
+    cur = con.cursor()
+    # Створюємо таблицю для користувачів
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_data (
+            user_id INTEGER PRIMARY KEY,
+            api_key TEXT,
+            keyword TEXT, 
+            num_buy INTEGER DEFAULT 0
+        )
+    """)
 with sq.connect("Chanels_base.db") as con:
     cur = con.cursor()
     cur.execute("""
@@ -179,10 +196,43 @@ with sq.connect("Chanels_base.db") as con:
             username TEXT,
             num_newchanel INTEGER DEFAULT 0,
             num_buy INTEGER DEFAULT 0,
-            searchchannels INTEGER DEFAULT 0
+            searchchannels INTEGER DEFAULT 0,
+            run INTEGER DEFAULT 0
         )
     """)
+# Функція для збереження даних користувача в базі
+def save_user_data(user_id, api_key=None, keyword=None):
+    with sq.connect("User_data.db") as con:
+        cur = con.cursor()
 
+        # Перевіряємо, чи є дані для цього користувача
+        cur.execute("SELECT * FROM user_data WHERE user_id = ?", (user_id,))
+        user_data = cur.fetchone()
+
+        if user_data:
+            # Якщо користувач вже є, оновлюємо його дані
+            if api_key:
+                cur.execute("UPDATE user_data SET api_key = ? WHERE user_id = ?", (api_key, user_id))
+            if keyword:
+                cur.execute("UPDATE user_data SET keyword = ? WHERE user_id = ?", (keyword, user_id))
+        else:
+            # Якщо користувача немає, додаємо новий запис
+            cur.execute("INSERT INTO user_data (user_id, api_key, keyword) VALUES (?, ?, ?)",
+                        (user_id, api_key, keyword))
+
+        con.commit()
+
+
+# Функція для пошуку каналів (це ваша функція, замініть її на свою реалізацію)
+def main_search(user_id):
+    with sq.connect("User_data.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (user_id,))
+        api_key, keyword = cur.fetchone()
+
+    # Логіка пошуку каналів (приклад, ваш код тут)
+    bot.send_message(user_id, f"Пошук каналів за ключовим словом '{keyword}' із API ключем {api_key}...")
+    # Тут можна реалізувати пошук каналів на YouTube або іншому сервісі
 
 
 # Функция для добавления пользователя в базу данных, если его еще нет
@@ -216,6 +266,130 @@ def Start_sms(message):
     if message.from_user.username == 'vladuslavmen':
         send_messages_to_users(message)
         channel_message = ''
+# Обробка натискання кнопки "Нова підбірка каналів"
+@bot.message_handler(func=lambda message: message.text == 'Нова підбірка каналів')
+def handle_new_collection(message):
+    user_id = message.from_user.id
+    # Перевіряємо, чи є користувач в базі
+    with sq.connect("User_data.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM user_data WHERE user_id = ?", (user_id,))
+        user_data = cur.fetchone()
+
+    if user_data:
+        bot.send_message(user_id, "Оберіть дію:", reply_markup=create_markup())
+    else:
+        # Якщо користувача немає в базі, створюємо новий запис
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO user_data (user_id, api_key, keyword, num_buy) VALUES (?, ?, ?, ?)", (user_id, '', '', 1))
+            con.commit()
+        bot.send_message(user_id, "Оберіть дію:", reply_markup=create_markup())
+
+# Обробка натискання кнопки "Оновити API ключ"
+@bot.message_handler(func=lambda message: message.text == 'Оновити API ключ')
+def update_api_key(message):
+    user_id = message.from_user.id
+
+    # Перевіряємо, чи є користувач в базі
+    with sq.connect("User_data.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT api_key FROM user_data WHERE user_id = ?", (user_id,))
+        api_key = cur.fetchone()
+
+    if api_key:
+        bot.send_message(user_id, "Введіть новий API ключ:")
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (user_id,))
+            cur.execute("""
+                                                            UPDATE user_data
+                                                            SET num_buy = 2
+                                                            WHERE user_id = ?
+                                                        """, (message.from_user.id,))
+            con.commit()
+    else:
+        bot.send_message(user_id, "API ключ не знайдений. Створюємо новий запис.")
+        # Якщо API ключ не знайдений, запитуємо його
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO user_data (user_id, api_key, keyword) VALUES (?, ?, ?)", (user_id, '', ''))
+            con.commit()
+
+        bot.send_message(user_id, "Введіть новий API ключ:")
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (user_id,))
+            cur.execute("""
+                                                            UPDATE user_data
+                                                            SET num_buy = 2
+                                                            WHERE user_id = ?
+                                                        """, (message.from_user.id,))
+            con.commit()
+
+# Обробка натискання кнопки "Оновити пошукове слово"
+@bot.message_handler(func=lambda message: message.text == 'Оновити пошукове слово')
+def update_keyword(message):
+    user_id = message.from_user.id
+
+    # Перевіряємо, чи є користувач в базі
+    with sq.connect("User_data.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT keyword FROM user_data WHERE user_id = ?", (user_id,))
+        keyword = cur.fetchone()
+
+    if keyword:
+        bot.send_message(user_id, "Введіть нове ключове слово для пошуку каналів:")
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (user_id,))
+            cur.execute("""
+                                                            UPDATE user_data
+                                                            SET num_buy = 3
+                                                            WHERE user_id = ?
+                                                        """, (message.from_user.id,))
+            con.commit()
+    else:
+        bot.send_message(user_id, "Пошукове слово не знайдено. Створюємо новий запис.")
+         # Якщо пошукове слово не знайдено, запитуємо його
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO user_data (user_id, api_key, keyword) VALUES (?, ?, ?)", (user_id, '', ''))
+            con.commit()
+        bot.send_message(user_id, "Введіть нове ключове слово для пошуку каналів:")
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (user_id,))
+            cur.execute("""
+                                                            UPDATE user_data
+                                                            SET num_buy = 3
+                                                            WHERE user_id = ?
+                                                        """, (message.from_user.id,))
+            con.commit()
+
+# Обробка натискання кнопки "Запустити пошук"
+@bot.message_handler(func=lambda message: message.text == 'Запустити пошук')
+def start_search(message):
+    user_id = message.from_user.id
+
+    # Перевіряємо, чи є дані для користувача
+    with sq.connect("User_data.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (user_id,))
+        user_data = cur.fetchone()
+
+    if user_data:
+        api_key, keyword = user_data
+        if api_key and keyword:
+            bot.send_message(user_id,
+                                f"Пошук за ключовим словом '{keyword}' із API ключем {api_key} розпочинається...")
+            # Викликаємо функцію для пошуку каналів
+            main_search(api_key, keyword, message)
+        else:
+            bot.send_message(user_id, "Необхідно ввести API ключ та ключове слово перед запуском пошуку.")
+    else:
+        bot.send_message(user_id,
+                            "Ви ще не ввели API ключ або пошукове слово. Будь ласка, спочатку налаштуйте ці дані.")
 start = 0
 keyword = ''
 api_key = ''
@@ -277,22 +451,6 @@ def main(message):
                                                     WHERE id = ?
                                                 """, (message.from_user.id,))
                         con.commit()
-        elif start == 2:
-            keyword = message.text
-            bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
-            start = 0
-            main_search(api_key, keyword, message)
-        elif start == 1:
-            api_key = message.text
-            bot.send_message(message.from_user.id, f"API ключ збережено:\n\n{api_key}")
-            start = 2
-            bot.send_message(message.from_user.id, "Введіть ключове слово для пошуку каналів:")
-        elif message.text == 'Нова підбірка каналів':
-            start = 0
-            keyword = ''
-            api_key = ''
-            bot.send_message(message.from_user.id, "Введіть API ключ для пошуку каналів:", reply_markup=markup_stop)
-            start = 1
         elif start_ros == 1:
             channel_message = message.text
             bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
@@ -309,7 +467,37 @@ def main(message):
         elif message.text == 'Назад':
             bot.send_message(message.chat.id, '<--', reply_markup=markup)
         else:
-            bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
+            with sq.connect("User_data.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
+                num_buy = cur.fetchone()[0]
+            if num_buy == 3:
+                keyword = message.text
+                bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
+                with sq.connect("User_data.db") as con:
+                    cur = con.cursor()
+                    cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
+                    cur.execute("""
+                                        UPDATE user_data
+                                        SET num_buy = 0, keyword = ?
+                                        WHERE user_id = ?
+                                    """, (message.text, message.from_user.id))
+                    con.commit()
+                main_search(api_key, keyword, message)
+            elif num_buy == 2:
+                api_key = message.text
+                bot.send_message(message.from_user.id, f"API ключ збережено:\n\n{api_key}")
+                with sq.connect("User_data.db") as con:
+                    cur = con.cursor()
+                    cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
+                    cur.execute("""
+                                        UPDATE user_data
+                                        SET num_buy = 0, api_key = ?
+                                        WHERE user_id = ?
+                                    """, (message.text, message.from_user.id))
+                    con.commit()
+            else:
+                bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
         return  # Блокуємо подальші дії
 
     # Якщо num_buy = 1, перевіряємо текст повідомлення
@@ -317,22 +505,6 @@ def main(message):
         bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
         print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
         process_channels(message, True)  # Викликаємо функцію обробки каналів
-    elif start == 2:
-        keyword = message.text
-        bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
-        start = 0
-        main_search(api_key, keyword, message)
-    elif start == 1:
-        api_key = message.text
-        bot.send_message(message.from_user.id, f"API ключ збережено:\n\n{api_key}")
-        start = 2
-        bot.send_message(message.from_user.id, "Введіть ключове слово для пошуку каналів:")
-    elif message.text == 'Нова підбірка каналів':
-        start = 0
-        keyword = ''
-        api_key = ''
-        bot.send_message(message.from_user.id, "Введіть API ключ для пошуку каналів:", reply_markup=markup_stop)
-        start = 1
     elif message.text == 'Реферальна програма':
         bot.send_message(message.chat.id, '''
 Не забувай про реферальну систему нашого бота!
@@ -347,22 +519,6 @@ def main(message):
         bot.send_message(message.chat.id, f'{Text[1]}', reply_markup=markup)
     elif message.text == 'Реклама':
         bot.send_message(message.chat.id, f'{Text[2]}', reply_markup=markup)
-    elif start == 2:
-        keyword = message.text
-        bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
-        start = 0
-        main_search(api_key, keyword, message)
-    elif start == 1:
-        api_key = message.text
-        bot.send_message(message.from_user.id, f"API ключ збережено:\n\n{api_key}")
-        start = 2
-        bot.send_message(message.from_user.id, "Введіть ключове слово для пошуку каналів:")
-    elif message.text == 'Нова підбірка каналів':
-        start = 0
-        keyword = ''
-        api_key = ''
-        bot.send_message(message.from_user.id, "Введіть API ключ для пошуку каналів:", reply_markup=markup_stop)
-        start = 1
     elif start_ros == 1:
         channel_message = message.text
         bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}",
@@ -372,7 +528,37 @@ def main(message):
     elif message.text == 'Назад':
         bot.send_message(message.chat.id, '<--', reply_markup=markup)
     else:
-        bot.send_message(message.chat.id, f"Не зрозуміле повідомлення: {message.text}", reply_markup=markup)
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
+            num_buy = cur.fetchone()[0]
+        if num_buy == 3:
+            keyword = message.text
+            bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
+            with sq.connect("User_data.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
+                cur.execute("""
+                                UPDATE user_data
+                                SET num_buy = 0, keyword = ?
+                                WHERE user_id = ?
+                            """, (message.text, message.from_user.id))
+                con.commit()
+            main_search(api_key, keyword, message)
+        elif num_buy == 2:
+            api_key = message.text
+            bot.send_message(message.from_user.id, f"API ключ збережено:\n\n{api_key}")
+            with sq.connect("User_data.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
+                cur.execute("""
+                                UPDATE user_data
+                                SET num_buy = 0, api_key = ?
+                                WHERE user_id = ?
+                            """, (message.text, message.from_user.id))
+                con.commit()
+        else:
+            bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
 
 
 channels_file = 'Chanels.txt'

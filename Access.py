@@ -40,7 +40,8 @@ with sq.connect("Chanels_base.db") as con:
             username TEXT,
             num_newchanel INTEGER DEFAULT 0,
             num_buy INTEGER DEFAULT 0,
-            searchchannels INTEGER DEFAULT 0)
+            searchchannels INTEGER DEFAULT 0,
+            run INTEGER DEFAULT 0)
     """)
 
 # Пропускаємо старі оновлення
