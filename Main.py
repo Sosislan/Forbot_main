@@ -465,11 +465,6 @@ def main(message):
                             print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
                             process_channels(message, False)  # Викликаємо функцію обробки каналів
                 else:
-                    with sq.connect("Chanels_base.db") as con:
-                        cur = con.cursor()
-                        # Отримуємо значення num_buy для користувача
-                        cur.execute("SELECT searchchannels FROM users WHERE id = ?", (message.from_user.id,))
-                        searchchannels = cur.fetchone()[0]
                     with sq.connect("User_chanel.db") as con:
                         cur = con.cursor()
                         cur.execute("SELECT name_chanel, id_chanel FROM user_chanel WHERE user_id = ?",
@@ -496,20 +491,24 @@ def main(message):
                             con.commit()
                             bot.send_message(message.chat.id, get_random_message(channel_name), reply_markup=markup)
                         else:
-                            if searchchannels == 0:
-                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
-                                bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
-                                print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
-                            else:
-                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
-                                print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
-                                process_channels(message, False)  # Викликаємо функцію обробки каналів
-                                cur.execute("""
-                                                            UPDATE users
-                                                            SET searchchannels = searchchannels - 1
-                                                            WHERE id = ?
-                                                        """, (message.from_user.id,))
-                                con.commit()
+                            with sq.connect("Chanels_base.db") as con:
+                                cur = con.cursor()
+                                cur.execute("SELECT searchchannels FROM users WHERE id = ?", (message.from_user.id,))
+                                searchchannels = cur.fetchone()[0]
+                                if searchchannels == 0:
+                                    bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
+                                    bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
+                                    print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
+                                else:
+                                    bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                    print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                                    process_channels(message, False)  # Викликаємо функцію обробки каналів
+                                    cur.execute("""
+                                                                UPDATE users
+                                                                SET searchchannels = searchchannels - 1
+                                                                WHERE id = ?
+                                                            """, (message.from_user.id,))
+                                    con.commit()
         elif start_ros == 1:
             channel_message = message.text
             bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
@@ -964,6 +963,10 @@ def main_search(api_key, keyword, message):
     print(f"Запуск пошуку з ключовим словом: {keyword}")
 
     bot.send_message(message.chat.id, f"Використовується API-ключ: {api_key} \nЗапуск пошуку за ключовим словом: {keyword}", reply_markup=markup_stop)
+
+    bot.send_message(message.chat.id,
+                     f"Зачекайте будь ласка",
+                     reply_markup=markup_stop)
     all_channel_ids, quota_status = search_channels_by_keyword(youtube, keyword, 300)
     if quota_status == "quota_reached":
         bot.send_message(message.chat.id, "Через досягнення квоти API-ключа пошук зупинено.", reply_markup=markup)
@@ -975,6 +978,9 @@ def main_search(api_key, keyword, message):
         status = check_channel_activity(youtube, channel_id, checked_channels, api_key, message)
         if status == "quota_reached" or status == "timeout":
             bot.send_message(message.chat.id, "Через досягнення квоти API-ключа пошук зупинено.", reply_markup=markup)
+    bot.send_message(message.chat.id,
+                     f"Пошук каналів припинено",
+                     reply_markup=markup)
 # Запуск бота
 res = True
 while res:
