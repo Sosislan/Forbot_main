@@ -18,11 +18,19 @@ Ref_chanel = telebot.types.KeyboardButton('Реферальна програма
 info_chanel = telebot.types.KeyboardButton('Інформація')
 markup.add(New_search, New_chanel, Ref_chanel, info_chanel)
 
+def create_markup_referal():
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(telebot.types.KeyboardButton('Створити реферальний код'))
+    markup.add(telebot.types.KeyboardButton('Ввести реферальний код'))
+    markup.add(telebot.types.KeyboardButton('Назад'))
+    return markup
+
 def create_markup():
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(telebot.types.KeyboardButton('Оновити API ключ'))
     markup.add(telebot.types.KeyboardButton('Оновити пошукове слово'))
     markup.add(telebot.types.KeyboardButton('Запустити пошук'))
+    markup.add(telebot.types.KeyboardButton('Переглянути дані'))
     markup.add(telebot.types.KeyboardButton('Назад'))
     return markup
 markup_stop = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -188,6 +196,17 @@ with sq.connect("User_chanel.db") as con:
             id_chanel TEXT
         )
     """)
+with sq.connect("User_referal.db") as con:
+    cur = con.cursor()
+    # Створюємо таблицю для користувачів
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_referal (
+            user_id INTEGER,
+            name_referal INTEGER DEFAULT 0,
+            add_num INTEGER DEFAULT 0,
+            join_referal INTEGER DEFAULT 0
+        )
+    """)
 with sq.connect("User_data.db") as con:
     cur = con.cursor()
     # Створюємо таблицю для користувачів
@@ -257,6 +276,20 @@ def add_user_to_db(user_id, username, mes):
             bot.send_message(mes, 'Привіт 🌝🤚.', reply_markup=markup)
         else:
             bot.send_message(mes, 'Ми з тобою вже знайомі!', reply_markup=markup)
+def add_user_to_db_ref(user_id, mes):
+    with sq.connect("User_referal.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT user_id FROM user_referal WHERE user_id = ?", (user_id,))
+        if cur.fetchone() is None:  # Если пользователя нет в базе
+            a = []
+            b = ''
+            for i in range(9):
+                a.append(random.randint(1, 100))
+            for c in a:
+                b = b.join(str(c))
+            cur.execute("INSERT INTO user_referal (user_id, name_referal) VALUES (?, ?)", (int(user_id), b))
+        else:
+            bot.send_message(mes, 'Ти вже створював!', reply_markup=markup)
 
 
 # Функция для проверки регистрации пользователя
@@ -426,11 +459,109 @@ def main(message):
     if num_buy == 0:
         if message.text == 'Реферальна програма':
             bot.send_message(message.chat.id, '''
-Не забувай про реферальну систему нашого бота!
-За кожного користувача, якого ти приведеш і який придбає наш бот, ти отримаєш 25% від вартості покупки.
-Тож, навіть якщо співпраця з YouTube-каналами не дасть результатів, ти завжди можеш заробити разом з нами та нашою командою!
-                ''', reply_markup=markup)
-            return
+            Не забувай про реферальну систему нашого бота!
+            За кожного користувача, якого ти приведеш, ти отримаєш +10 доступних каналів.
+                    ''', reply_markup=create_markup_referal())
+        elif message.text == 'Створити реферальний код':
+            with sq.connect("User_referal.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT name_referal, add_num, join_referal FROM user_referal WHERE user_id = ?",
+                            (message.from_user.id,))
+                result = cur.fetchone()
+                if result:
+                    name_referal, add_num, join_referal = result
+                    print(
+                        f"Користувач: {message.from_user.id} з username {message.from_user.username} реферальний код {name_referal} кількість приглашоних {add_num}")
+                    if join_referal == 0:
+                        bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
+                        bot.send_message(message.chat.id,
+                                         f'{name_referal}')
+                        bot.send_message(message.chat.id,
+                                         f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.')
+                    else:
+                        bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
+                        bot.send_message(message.chat.id,
+                                         f'{name_referal}')
+                        bot.send_message(message.chat.id,
+                                         f'Кількість запрошених користувачів: {add_num}. Реферальний код, за яким ви приєдналися:')
+                        bot.send_message(message.chat.id,
+                                         f'{join_referal}.', reply_markup=create_markup_referal())
+                else:
+                    add_user_to_db_ref(message.from_user.id, message)
+                    with sq.connect("User_referal.db") as con:
+                        cur = con.cursor()
+                        cur.execute("SELECT name_referal, add_num FROM user_referal WHERE user_id = ?",
+                                    (message.from_user.id,))
+                        result = cur.fetchone()
+                        name_referal, add_num = result
+                        bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
+                        bot.send_message(message.chat.id,
+                                         f'{name_referal}')
+                        bot.send_message(message.chat.id,
+                                         f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.',
+                                         reply_markup=create_markup_referal())
+        elif message.text == 'Ввести реферальний код':
+            with sq.connect("User_referal.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT join_referal FROM user_referal WHERE user_id = ?",
+                            (message.from_user.id,))
+                result = cur.fetchone()
+                if result:
+                    join_referal = result[0]
+                    if join_referal == 0:
+                        bot.send_message(message.chat.id,
+                                         f'Введіть реферальний код користувача який вас пригласив:',
+                                         reply_markup=markup_stop)
+
+                    else:
+                        bot.send_message(message.chat.id,
+                                         f'Ви вже ввели реферальний код: \n{join_referal}',
+                                         reply_markup=markup)
+                else:
+                    add_user_to_db_ref(message.from_user.id, message)
+        elif len(message.text) > 8:
+            try:
+                key = int(message.text)
+                with sq.connect("User_referal.db") as con:
+                    cur = con.cursor()
+                    cur.execute("SELECT name_referal FROM user_referal;")
+                    result = cur.fetchall()
+                    with sq.connect("User_referal.db") as con1:
+                        cur1 = con1.cursor()
+                        cur1.execute("SELECT name_referal FROM user_referal WHERE user_id = ?",
+                                     (message.from_user.id,))
+                        result1 = cur1.fetchone()
+                    for res in result:
+                        if res[0] == key:
+                            if result1[0] == key:
+                                bot.send_message(message.chat.id,
+                                                 f'Ви ввели свій код: \n{key}',
+                                                 reply_markup=markup)
+                                return
+                            else:
+                                cur.execute("""
+                                                                        UPDATE user_referal
+                                                                        SET join_referal = ?
+                                                                        WHERE user_id = ?
+                                                                    """, (key, message.from_user.id))
+                                con.commit()
+                                bot.send_message(message.chat.id,
+                                                 f'Ви успішно підключились по коду: \n{key}',
+                                                 reply_markup=markup)
+                                with sq.connect("User_referal.db") as con:
+                                    cur = con.cursor()
+                                    cur.execute("""
+                                                                                                        UPDATE user_referal
+                                                                                                        SET add_num = add_num + 1
+                                                                                                        WHERE name_referal = ?""",
+                                                (key,))
+                                    con.commit()
+                                return
+                    bot.send_message(message.chat.id,
+                                     f'Ви ввели не дійсний код: \n{key}',
+                                     reply_markup=markup)
+            except Exception as e:
+                bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
         elif message.text == 'Новий канал':
             with sq.connect("Chanels_base.db") as con:
                 cur = con.cursor()
@@ -495,6 +626,14 @@ def main(message):
                                 cur = con.cursor()
                                 cur.execute("SELECT searchchannels FROM users WHERE id = ?", (message.from_user.id,))
                                 searchchannels = cur.fetchone()[0]
+                                if searchchannels < 0:
+                                    cur.execute("""
+                                                                                                    UPDATE users
+                                                                                                    SET searchchannels = 0
+                                                                                                    WHERE id = ?
+                                                                                                """,
+                                                (message.from_user.id,))
+                                    con.commit()
                                 if searchchannels == 0:
                                     bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
                                     bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
@@ -537,6 +676,13 @@ def main(message):
             bot.send_message(message.chat.id, f'{Text[2]}', reply_markup=markup)
         elif message.text == 'Назад':
             bot.send_message(message.chat.id, '<--', reply_markup=markup)
+        elif message.text == 'Переглянути дані':
+            with sq.connect("User_data.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (message.chat.id,))
+                result = cur.fetchone()
+                api_key, keyword = result
+                bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}", reply_markup=markup)
         else:
             with sq.connect("User_data.db") as con:
                 cur = con.cursor()
@@ -601,12 +747,119 @@ def main(message):
                 bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
                 print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
                 process_channels(message, True)  # Викликаємо функцію обробки каналів
+    elif message.text == 'Переглянути дані':
+        with sq.connect("User_data.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (message.chat.id,))
+            result = cur.fetchone()
+            api_key, keyword = result
+            bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}",
+                             reply_markup=markup)
     elif message.text == 'Реферальна програма':
         bot.send_message(message.chat.id, '''
 Не забувай про реферальну систему нашого бота!
-За кожного користувача, якого ти приведеш і який придбає наш бот, ти отримаєш 25% від вартості покупки.
-Тож, навіть якщо співпраця з YouTube-каналами не дасть результатів, ти завжди можеш заробити разом з нами та нашою командою!
-        ''', reply_markup=markup)
+За кожного користувача, якого ти приведеш, ти отримаєш +10 доступних каналів.
+        ''', reply_markup=create_markup_referal())
+    elif message.text == 'Створити реферальний код':
+        with sq.connect("User_referal.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT name_referal, add_num, join_referal FROM user_referal WHERE user_id = ?",
+                        (message.from_user.id,))
+            result = cur.fetchone()
+            if result:
+                name_referal, add_num, join_referal = result
+                print(
+                    f"Користувач: {message.from_user.id} з username {message.from_user.username} реферальний код {name_referal} кількість приглашоних {add_num}")
+                if join_referal == 0:
+                    bot.send_message(message.chat.id,f'Ось ваш реферальний код:')
+                    bot.send_message(message.chat.id,
+                                     f'{name_referal}')
+                    bot.send_message(message.chat.id,
+                                     f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.')
+                else:
+                    bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
+                    bot.send_message(message.chat.id,
+                                     f'{name_referal}')
+                    bot.send_message(message.chat.id,
+                                     f'Кількість запрошених користувачів: {add_num}. Реферальний код, за яким ви приєдналися:')
+                    bot.send_message(message.chat.id,
+                                     f'{join_referal}.', reply_markup=create_markup_referal())
+            else:
+                add_user_to_db_ref(message.from_user.id, message)
+                with sq.connect("User_referal.db") as con:
+                    cur = con.cursor()
+                    cur.execute("SELECT name_referal, add_num FROM user_referal WHERE user_id = ?",
+                                (message.from_user.id,))
+                    result = cur.fetchone()
+                    name_referal, add_num = result
+                    bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
+                    bot.send_message(message.chat.id,
+                                     f'{name_referal}')
+                    bot.send_message(message.chat.id,
+                                     f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.',
+                                     reply_markup=create_markup_referal())
+    elif message.text == 'Ввести реферальний код':
+        with sq.connect("User_referal.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT join_referal FROM user_referal WHERE user_id = ?",
+                        (message.from_user.id,))
+            result = cur.fetchone()
+            if result:
+                join_referal = result[0]
+                if join_referal == 0:
+                    bot.send_message(message.chat.id,
+                                 f'Введіть реферальний код користувача який вас пригласив:',
+                                 reply_markup=markup_stop)
+
+                else:
+                    bot.send_message(message.chat.id,
+                                     f'Ви вже ввели реферальний код: \n{join_referal}',
+                                     reply_markup=markup)
+            else:
+                add_user_to_db_ref(message.from_user.id, message)
+    elif len(message.text) > 8:
+        try:
+            key = int(message.text)
+            with sq.connect("User_referal.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT name_referal FROM user_referal;")
+                result = cur.fetchall()
+                with sq.connect("User_referal.db") as con1:
+                    cur1 = con1.cursor()
+                    cur1.execute("SELECT name_referal FROM user_referal WHERE user_id = ?",
+                        (message.from_user.id,))
+                    result1 = cur1.fetchone()
+                for res in result:
+                    if res[0] == key:
+                        if result1[0] == key:
+                            bot.send_message(message.chat.id,
+                                             f'Ви ввели свій код: \n{key}',
+                                             reply_markup=markup)
+                            return
+                        else:
+                            cur.execute("""
+                                                            UPDATE user_referal
+                                                            SET join_referal = ?
+                                                            WHERE user_id = ?
+                                                        """, (key, message.from_user.id))
+                            con.commit()
+                            bot.send_message(message.chat.id,
+                                             f'Ви успішно підключились по коду: \n{key}',
+                                             reply_markup=markup)
+                            with sq.connect("User_referal.db") as con:
+                                cur = con.cursor()
+                                cur.execute("""
+                                                                                            UPDATE user_referal
+                                                                                            SET add_num = add_num + 1
+                                                                                            WHERE name_referal = ?""",
+                                            (key,))
+                                con.commit()
+                            return
+                bot.send_message(message.chat.id,
+                                 f'Ви ввели не дійсний код: \n{key}',
+                                 reply_markup=markup)
+        except Exception as e:
+            bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
     elif message.text == 'Інформація':
         bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
     elif message.text == 'Що таке Api-key?':
