@@ -562,6 +562,13 @@ def main(message):
                                      reply_markup=markup)
             except Exception as e:
                 bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
+        elif message.text == 'Переглянути дані':
+            with sq.connect("User_data.db") as con:
+                cur = con.cursor()
+                cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (message.chat.id,))
+                result = cur.fetchone()
+                api_key, keyword = result
+                bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}", reply_markup=markup)
         elif message.text == 'Новий канал':
             with sq.connect("Chanels_base.db") as con:
                 cur = con.cursor()
