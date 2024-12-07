@@ -531,49 +531,6 @@ def main(message):
                                          reply_markup=markup)
                 else:
                     add_user_to_db_ref(message.from_user.id, message)
-        elif len(message.text) > 8:
-            try:
-                key = int(message.text)
-                with sq.connect("User_referal.db") as con:
-                    cur = con.cursor()
-                    cur.execute("SELECT name_referal FROM user_referal;")
-                    result = cur.fetchall()
-                    with sq.connect("User_referal.db") as con1:
-                        cur1 = con1.cursor()
-                        cur1.execute("SELECT name_referal FROM user_referal WHERE user_id = ?",
-                                     (message.from_user.id,))
-                        result1 = cur1.fetchone()
-                    for res in result:
-                        if res[0] == key:
-                            if result1[0] == key:
-                                bot.send_message(message.chat.id,
-                                                 f'Ви ввели свій код: \n{key}',
-                                                 reply_markup=markup)
-                                return
-                            else:
-                                cur.execute("""
-                                                                        UPDATE user_referal
-                                                                        SET join_referal = ?
-                                                                        WHERE user_id = ?
-                                                                    """, (key, message.from_user.id))
-                                con.commit()
-                                bot.send_message(message.chat.id,
-                                                 f'Ви успішно підключились по коду: \n{key}',
-                                                 reply_markup=markup)
-                                with sq.connect("User_referal.db") as con:
-                                    cur = con.cursor()
-                                    cur.execute("""
-                                                                                                        UPDATE user_referal
-                                                                                                        SET add_num = add_num + 10
-                                                                                                        WHERE name_referal = ?""",
-                                                (key,))
-                                    con.commit()
-                                return
-                    bot.send_message(message.chat.id,
-                                     f'Ви ввели не дійсний код: \n{key}',
-                                     reply_markup=markup)
-            except Exception as e:
-                bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
         elif message.text == 'Новий канал':
             with sq.connect("Chanels_base.db") as con:
                 cur = con.cursor()
@@ -738,6 +695,49 @@ def main(message):
                                         WHERE user_id = ?
                                     """, (message.text, message.from_user.id))
                     con.commit()
+            elif len(message.text) > 8:
+                try:
+                    key = int(message.text)
+                    with sq.connect("User_referal.db") as con:
+                        cur = con.cursor()
+                        cur.execute("SELECT name_referal FROM user_referal;")
+                        result = cur.fetchall()
+                        with sq.connect("User_referal.db") as con1:
+                            cur1 = con1.cursor()
+                            cur1.execute("SELECT name_referal FROM user_referal WHERE user_id = ?",
+                                         (message.from_user.id,))
+                            result1 = cur1.fetchone()
+                        for res in result:
+                            if res[0] == key:
+                                if result1[0] == key:
+                                    bot.send_message(message.chat.id,
+                                                     f'Ви ввели свій код: \n{key}',
+                                                     reply_markup=markup)
+                                    return
+                                else:
+                                    cur.execute("""
+                                                                            UPDATE user_referal
+                                                                            SET join_referal = ?
+                                                                            WHERE user_id = ?
+                                                                        """, (key, message.from_user.id))
+                                    con.commit()
+                                    bot.send_message(message.chat.id,
+                                                     f'Ви успішно підключились по коду: \n{key}',
+                                                     reply_markup=markup)
+                                    with sq.connect("User_referal.db") as con:
+                                        cur = con.cursor()
+                                        cur.execute("""
+                                                                                                            UPDATE user_referal
+                                                                                                            SET add_num = add_num + 10
+                                                                                                            WHERE name_referal = ?""",
+                                                    (key,))
+                                        con.commit()
+                                    return
+                        bot.send_message(message.chat.id,
+                                         f'Ви ввели не дійсний код: \n{key}',
+                                         reply_markup=markup)
+                except Exception as e:
+                    bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
             else:
                 bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
         return  # Блокуємо подальші дії
@@ -847,49 +847,6 @@ def main(message):
                                      reply_markup=markup)
             else:
                 add_user_to_db_ref(message.from_user.id, message)
-    elif len(message.text) > 8:
-        try:
-            key = int(message.text)
-            with sq.connect("User_referal.db") as con:
-                cur = con.cursor()
-                cur.execute("SELECT name_referal FROM user_referal;")
-                result = cur.fetchall()
-                with sq.connect("User_referal.db") as con1:
-                    cur1 = con1.cursor()
-                    cur1.execute("SELECT name_referal FROM user_referal WHERE user_id = ?",
-                        (message.from_user.id,))
-                    result1 = cur1.fetchone()
-                for res in result:
-                    if res[0] == key:
-                        if result1[0] == key:
-                            bot.send_message(message.chat.id,
-                                             f'Ви ввели свій код: \n{key}',
-                                             reply_markup=markup)
-                            return
-                        else:
-                            cur.execute("""
-                                                            UPDATE user_referal
-                                                            SET join_referal = ?
-                                                            WHERE user_id = ?
-                                                        """, (key, message.from_user.id))
-                            con.commit()
-                            bot.send_message(message.chat.id,
-                                             f'Ви успішно підключились по коду: \n{key}',
-                                             reply_markup=markup)
-                            with sq.connect("User_referal.db") as con:
-                                cur = con.cursor()
-                                cur.execute("""
-                                                                                            UPDATE user_referal
-                                                                                            SET add_num = add_num + 1
-                                                                                            WHERE name_referal = ?""",
-                                            (key,))
-                                con.commit()
-                            return
-                bot.send_message(message.chat.id,
-                                 f'Ви ввели не дійсний код: \n{key}',
-                                 reply_markup=markup)
-        except Exception as e:
-            bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
     elif message.text == 'Інформація':
         bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
     elif message.text == 'Що таке Api-key?':
@@ -949,6 +906,49 @@ def main(message):
                                 WHERE user_id = ?
                             """, (message.text, message.from_user.id))
                 con.commit()
+        elif len(message.text) > 8:
+            try:
+                key = int(message.text)
+                with sq.connect("User_referal.db") as con:
+                    cur = con.cursor()
+                    cur.execute("SELECT name_referal FROM user_referal;")
+                    result = cur.fetchall()
+                    with sq.connect("User_referal.db") as con1:
+                        cur1 = con1.cursor()
+                        cur1.execute("SELECT name_referal FROM user_referal WHERE user_id = ?",
+                                     (message.from_user.id,))
+                        result1 = cur1.fetchone()
+                    for res in result:
+                        if res[0] == key:
+                            if result1[0] == key:
+                                bot.send_message(message.chat.id,
+                                                 f'Ви ввели свій код: \n{key}',
+                                                 reply_markup=markup)
+                                return
+                            else:
+                                cur.execute("""
+                                                                UPDATE user_referal
+                                                                SET join_referal = ?
+                                                                WHERE user_id = ?
+                                                            """, (key, message.from_user.id))
+                                con.commit()
+                                bot.send_message(message.chat.id,
+                                                 f'Ви успішно підключились по коду: \n{key}',
+                                                 reply_markup=markup)
+                                with sq.connect("User_referal.db") as con:
+                                    cur = con.cursor()
+                                    cur.execute("""
+                                                                                                UPDATE user_referal
+                                                                                                SET add_num = add_num + 1
+                                                                                                WHERE name_referal = ?""",
+                                                (key,))
+                                    con.commit()
+                                return
+                    bot.send_message(message.chat.id,
+                                     f'Ви ввели не дійсний код: \n{key}',
+                                     reply_markup=markup)
+            except Exception as e:
+                bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
         else:
             bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
 
