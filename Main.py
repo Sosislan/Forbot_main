@@ -559,7 +559,7 @@ def main(message):
                                     cur = con.cursor()
                                     cur.execute("""
                                                                                                         UPDATE user_referal
-                                                                                                        SET add_num = add_num + 1
+                                                                                                        SET add_num = add_num + 10
                                                                                                         WHERE name_referal = ?""",
                                                 (key,))
                                     con.commit()
@@ -642,9 +642,27 @@ def main(message):
                                                 (message.from_user.id,))
                                     con.commit()
                                 if searchchannels == 0:
-                                    bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
-                                    bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
-                                    print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
+                                    with sq.connect("User_referal.db") as con:
+                                        cur = con.cursor()
+                                        cur.execute("SELECT add_num FROM user_referal WHERE user_id = ?",
+                                                    (message.from_user.id,))
+                                        result = cur.fetchone()[0]
+                                        if result > 0:
+                                            bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                            print(
+                                                f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                                            process_channels(message, False)  # Викликаємо функцію обробки каналів
+                                            cur.execute("""
+                                                                                                            UPDATE users
+                                                                                                            SET add_num = add_num - 1
+                                                                                                            WHERE id = ?
+                                                                                                        """,
+                                                        (message.from_user.id,))
+                                            con.commit()
+                                        else:
+                                            bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
+                                            bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
+                                            print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
                                 else:
                                     bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
                                     print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
