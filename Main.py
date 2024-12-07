@@ -457,6 +457,11 @@ def main(message):
         num_buy = cur.fetchone()[0]
 
     if num_buy == 0:
+        if start_ros == 1:
+            channel_message = message.text
+            bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
+            start_ros = 0
+            send_messages_to_users(message)
         if message.text == 'Реферальна програма':
             bot.send_message(message.chat.id, '''
 Не забувай про реферальну систему нашого бота!
@@ -673,11 +678,6 @@ def main(message):
                                                                 WHERE id = ?
                                                             """, (message.from_user.id,))
                                     con.commit()
-        elif start_ros == 1:
-            channel_message = message.text
-            bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
-            start_ros = 0
-            send_messages_to_users(message)
         elif message.text == 'Інформація':
             bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
         elif message.text == 'Що таке Api-key?':
@@ -780,6 +780,11 @@ def main(message):
             api_key, keyword = result
             bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}",
                              reply_markup=markup)
+    elif start_ros == 1:
+        channel_message = message.text
+        bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
+        start_ros = 0
+        send_messages_to_users(message)
     elif message.text == 'Реферальна програма':
         bot.send_message(message.chat.id, '''
 Не забувай про реферальну систему нашого бота!
