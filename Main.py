@@ -1293,12 +1293,12 @@ def main_search(api_key, keyword, message):
                      f"Пошук каналів припинено",
                      reply_markup=markup)
 # Запуск бота
-#while res:
-    #try:
-        #bot.polling(skip_pending=True, none_stop=True)
-        #res = False
-    #except Exception as e:
-        #print(f"bot_stop: {e}")
-        #res = True
-bot.polling(skip_pending=True, none_stop=True)
+res = True
+while res:
+    try:
+        bot.polling(skip_pending=True, none_stop=True)
+        res = False
+    except Exception as e:
+        print(f"bot_stop: {e}")
+        res = True
 
