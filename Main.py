@@ -626,15 +626,17 @@ def main(message):
                                             bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
                                             print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
                                 else:
-                                    bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
-                                    print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
-                                    process_channels(message, False)  # Викликаємо функцію обробки каналів
-                                    cur.execute("""
-                                                                UPDATE users
-                                                                SET searchchannels = searchchannels - 1
-                                                                WHERE id = ?
-                                                            """, (message.from_user.id,))
-                                    con.commit()
+                                    with sq.connect("Chanels_base.db") as con:
+                                        cur = con.cursor()
+                                        bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                        print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                                        process_channels(message, False)  # Викликаємо функцію обробки каналів
+                                        cur.execute("""
+                                                                    UPDATE users
+                                                                    SET searchchannels = searchchannels - 1
+                                                                    WHERE id = ?
+                                                                """, (message.from_user.id,))
+                                        con.commit()
         elif message.text == 'Інформація':
             bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
         elif message.text == 'Що таке Api-key?':
