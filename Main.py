@@ -288,8 +288,6 @@ def add_user_to_db_ref(user_id, mes):
             for c in a:
                 b = b.join(str(c))
             cur.execute("INSERT INTO user_referal (user_id, name_referal) VALUES (?, ?)", (int(user_id), b))
-        else:
-            bot.send_message(mes, 'Ти вже створював!', reply_markup=markup)
 
 
 # Функция для проверки регистрации пользователя
@@ -489,13 +487,13 @@ def main(message):
                         bot.send_message(message.chat.id,
                                          f'{name_referal}')
                         bot.send_message(message.chat.id,
-                                         f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.')
+                                         f'Кількість доступних каналів по рефералці: {add_num}. Ви ще не ввели реферальний код друга.')
                     else:
                         bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
                         bot.send_message(message.chat.id,
                                          f'{name_referal}')
                         bot.send_message(message.chat.id,
-                                         f'Кількість запрошених користувачів: {add_num}. Реферальний код, за яким ви приєдналися:')
+                                         f'Кількість доступних каналів по рефералці: {add_num}. Реферальний код, за яким ви приєдналися:')
                         bot.send_message(message.chat.id,
                                          f'{join_referal}.', reply_markup=create_markup_referal())
                 else:
@@ -604,27 +602,53 @@ def main(message):
                                                 (message.from_user.id,))
                                     con.commit()
                                 if searchchannels == 0:
-                                    with sq.connect("User_referal.db") as con:
-                                        cur = con.cursor()
-                                        cur.execute("SELECT add_num FROM user_referal WHERE user_id = ?",
-                                                    (message.from_user.id,))
-                                        result = cur.fetchone()[0]
-                                        if result > 0:
-                                            bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
-                                            print(
-                                                f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
-                                            process_channels(message, False)  # Викликаємо функцію обробки каналів
-                                            cur.execute("""
-                                                                                                            UPDATE users
-                                                                                                            SET add_num = add_num - 1
-                                                                                                            WHERE id = ?
-                                                                                                        """,
+                                    try:
+                                        with sq.connect("User_referal.db") as con:
+                                            cur = con.cursor()
+                                            cur.execute("SELECT add_num FROM user_referal WHERE user_id = ?",
                                                         (message.from_user.id,))
-                                            con.commit()
-                                        else:
-                                            bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
-                                            bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
-                                            print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
+                                            result = cur.fetchone()  # fetchone() может вернуть None
+                                            if result[0] > 0:
+                                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                                print(
+                                                    f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                                                process_channels(message, False)  # Викликаємо функцію обробки каналів
+                                                cur.execute("""
+                                                                                                                UPDATE users
+                                                                                                                SET add_num = add_num - 1
+                                                                                                                WHERE id = ?
+                                                                                                            """,
+                                                            (message.from_user.id,))
+                                                con.commit()
+                                            else:
+                                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
+                                                bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
+                                                print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
+                                    except BaseException as e:
+                                        add_user_to_db_ref(message.from_user.id, message)
+                                        with sq.connect("User_referal.db") as con:
+                                            cur = con.cursor()
+                                            cur.execute("SELECT add_num FROM user_referal WHERE user_id = ?",
+                                                        (message.from_user.id,))
+                                            result = cur.fetchone()  # fetchone() может вернуть None
+                                            if result[0] > 0:
+                                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                                print(
+                                                    f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
+                                                process_channels(message, False)  # Викликаємо функцію обробки каналів
+                                                cur.execute("""
+                                                                                                                UPDATE users
+                                                                                                                SET add_num = add_num - 1
+                                                                                                                WHERE id = ?
+                                                                                                            """,
+                                                            (message.from_user.id,))
+                                                con.commit()
+                                            else:
+                                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
+                                                bot.send_message(message.chat.id,
+                                                                 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
+                                                print(
+                                                    f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
                                 else:
                                     with sq.connect("Chanels_base.db") as con:
                                         cur = con.cursor()
@@ -671,7 +695,9 @@ def main(message):
             with sq.connect("User_data.db") as con:
                 cur = con.cursor()
                 cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
-                num_buy = cur.fetchone()[0]
+                num_buy = cur.fetchone()  # fetchone() может вернуть None
+                if num_buy is not None:
+                    num_buy = num_buy[0]
             if num_buy == 3:
                 keyword = message.text
                 bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
@@ -807,13 +833,13 @@ def main(message):
                     bot.send_message(message.chat.id,
                                      f'{name_referal}')
                     bot.send_message(message.chat.id,
-                                     f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.')
+                                     f'Кількість доступних каналів по рефералці: {add_num}. Ви ще не ввели реферальний код друга.')
                 else:
                     bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
                     bot.send_message(message.chat.id,
                                      f'{name_referal}')
                     bot.send_message(message.chat.id,
-                                     f'Кількість запрошених користувачів: {add_num}. Реферальний код, за яким ви приєдналися:')
+                                     f'Кількість доступних каналів по рефералці: {add_num}. Реферальний код, за яким ви приєдналися:')
                     bot.send_message(message.chat.id,
                                      f'{join_referal}.', reply_markup=create_markup_referal())
             else:
@@ -908,7 +934,7 @@ def main(message):
                                 WHERE user_id = ?
                             """, (message.text, message.from_user.id))
                 con.commit()
-        elif len(message.text) > 8:
+        elif len(message.text) > 7:
             try:
                 key = int(message.text)
                 with sq.connect("User_referal.db") as con:
@@ -1267,13 +1293,12 @@ def main_search(api_key, keyword, message):
                      f"Пошук каналів припинено",
                      reply_markup=markup)
 # Запуск бота
-res = True
-while res:
-    try:
-        bot.polling(skip_pending=True, none_stop=True)
-        res = False
-    except Exception as e:
-        print(f"bot_stop: {e}")
-        res = True
-
+#while res:
+    #try:
+        #bot.polling(skip_pending=True, none_stop=True)
+        #res = False
+    #except Exception as e:
+        #print(f"bot_stop: {e}")
+        #res = True
+bot.polling(skip_pending=True, none_stop=True)
 
