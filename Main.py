@@ -179,9 +179,9 @@ def send_messages_to_users(message):
             for user in users:
                 user_id = user[0]
                 try:
-                    bot.send_message(user_id, get_random_channel_message())
+                    bot.send_message(user_id, get_random_channel_message(), reply_markup=markup)
                 except Exception as e:
-                    bot.send_message(admin_id, f"Помилка відправки користувачу {user_id}: {e}")
+                    bot.send_message(admin_id, f"Помилка відправки користувачу {user_id}: {e}", reply_markup=markup)
         else:
             get_message_from_admin(message)
 
@@ -556,6 +556,13 @@ def main(message):
                                 message.chat.id,
                                 f"Канал: {channel_name}\nПосилання: {youtube_link}"
                             )
+                            try:
+                                cur.execute(
+                                    "DELETE FROM user_chanel WHERE user_id = ? AND name_chanel = ? AND id_chanel = ?",
+                                    (message.from_user.id, name_chanel, id_chanel))
+                                con.commit()
+                            except Exception as e:
+                                print(f"Помилка при видаленні: {e}")
                             # Відправляємо повідомлення з випадковим текстом
                             bot.send_message(message.chat.id, get_random_message(channel_name), reply_markup=markup)
                         else:
