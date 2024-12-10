@@ -583,10 +583,13 @@ def main(message):
                                 f"Канал: {channel_name}\nПосилання: {youtube_link}"
                             )
                             # Відправляємо повідомлення з випадковим текстом
-                            cur.execute(
-                                "DELETE FROM user_chanel WHERE user_id = ? AND name_chanel = ? AND id_chanel = ?",
-                                (message.from_user.id, name_chanel, id_chanel))
-                            con.commit()
+                            try:
+                                cur.execute(
+                                    "DELETE FROM user_chanel WHERE user_id = ? AND name_chanel = ? AND id_chanel = ?",
+                                    (message.from_user.id, name_chanel, id_chanel))
+                                con.commit()
+                            except Exception as e:
+                                print(f"Помилка при видаленні: {e}")
                             bot.send_message(message.chat.id, get_random_message(channel_name), reply_markup=markup)
                         else:
                             with sq.connect("Chanels_base.db") as con:
