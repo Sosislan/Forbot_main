@@ -1,4 +1,5 @@
 import telebot
+import time
 import sqlite3 as sq
 from config import Giveaccessyoutube, admin_id  # Імпорт API ключа з config.py
 
@@ -145,6 +146,7 @@ def main(message):
                         if maks < user[1]:
                             maks = user[1]
                     if message.text != 'Інфо':
+                        time.sleep(0.5)
                         bot.send_message(user_id,
                                         f"Ім'я: {user[0]}, Кількість пройдених каналів: {user[1]}, статус покупки = {user[2]}, Кількість найдених каналів = {user[3]}")
             channels = get_all_channels()
