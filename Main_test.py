@@ -5,7 +5,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from telebot import TeleBot
-from config import API_KEY, API_SECRET, Bot_token, COINGECKO_API_TOKEN
+from config import API_KEY, API_SECRET, Bot_token1, COINGECKO_API_TOKEN
 import ccxt
 import requests
 import nltk
@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # API ключі
 api_key = API_KEY
 api_secret = API_SECRET
-TELEGRAM_TOKEN = Bot_token
+TELEGRAM_TOKEN = Bot_token1
 TELEGRAM_CHAT_ID = "@testcrupto"
 bot = TeleBot(TELEGRAM_TOKEN)
 
