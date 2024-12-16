@@ -49,7 +49,6 @@ def fetch_news(symbol):
 
         # Перевірка наявності результатів
         if 'results' not in news_data:
-            logging.error("Відповідь API не містить поля 'results'")
             return []
 
         # Фільтрація новин, які стосуються символу
@@ -58,14 +57,11 @@ def fetch_news(symbol):
             if symbol.split('/')[0].lower() in (item.get('currencies') or [])
         ]
 
-        logging.info(f"Отримано {len(relevant_news)} релевантних новин для {symbol}")
         return relevant_news
 
     except requests.exceptions.RequestException as e:
-        logging.error(f"Помилка запиту до API: {str(e)}")
         return []
     except Exception as e:
-        logging.error(f"Невідома помилка при отриманні новин: {str(e)}")
         return []
 
 def clean_text(text):
@@ -77,7 +73,6 @@ def clean_text(text):
         text = re.sub(r"[^a-zA-Z0-9 .,!?\-]", "", text)  # Видалення всіх незвичайних символів
         return text.strip()
     except Exception as e:
-        logging.error(f"Помилка очищення тексту: {str(e)}")
         return text
 
 
@@ -175,7 +170,6 @@ def analyze_sentiment(news):
             return None  # Нейтральний настрій
 
     except Exception as e:
-        logging.error(f"Помилка аналізу настрою: {str(e)}")
         return None
 
 def analyze_news_impact(symbol):
@@ -185,7 +179,6 @@ def analyze_news_impact(symbol):
         news = fetch_news(symbol)
 
         if not news:
-            logging.info(f"Новини для символу {symbol} не знайдено")
             return None
 
         # Аналіз настрою
@@ -193,7 +186,6 @@ def analyze_news_impact(symbol):
 
         # Якщо настрій слабкий, не аналізуємо далі
         if sentiment_score is None:
-            logging.info("Настрій нейтральний або недостатньо даних для аналізу")
             return None
 
         # Отримання зміни ціни за останню годину
@@ -202,17 +194,13 @@ def analyze_news_impact(symbol):
 
         # Аналіз впливу
         if sentiment_score and price_change > 0:
-            logging.info("Позитивні новини підтверджують зростання ціни")
             return True
         elif not sentiment_score and price_change < 0:
-            logging.info("Негативні новини підтверджують падіння ціни")
             return False
         else:
-            logging.info("Настрій новин і зміна ціни не збігаються")
             return None
 
     except Exception as e:
-        logging.error(f"Помилка аналізу впливу новин: {str(e)}")
         return None
 
 def get_price_change(symbol, start_time):
@@ -232,7 +220,6 @@ def get_data(symbol, timeframe='15m', limit=60):
         ohlcv = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
         return pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
     except Exception as e:
-        logging.error(f"Помилка отримання даних для {symbol}: {str(e)}")
         return pd.DataFrame()
 
 
@@ -428,8 +415,6 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
 
     rsi = calculate_rsi(close_prices_15m)
     if rsi > 30 and rsi < 70:
-        logging.info(
-            f"Сигналів для {symbol} не знайдено. RSI {rsi}")
         return
     atr = calculate_atr(df_15m)
     ema_15m = calculate_ema(close_prices_15m)  # EMA для 15 хвилин
@@ -476,26 +461,7 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
         targets = [close_prices_15m.iloc[-1] - atr * atr_multiplier * i for i in multipliers]
 
     else:
-        if rsi < 30:
-            logging.info(f"Сигналів для {symbol} не знайдено. RSI {rsi}   {rsi < 30} {macd > signal_line} {adx>20} {stoch<20} {cci < -100} {(close_prices_15m.iloc[-1] > ema_15m or close_prices_15m.iloc[-1] > sar)} {result}")
-            logging.info(f"{close_prices_15m.iloc[-1] > ema_15m} {close_prices_15m.iloc[-1] > sar} {(result is None or result)}")
-
-        else:
-            logging.info(f"Сигналів для {symbol} не знайдено. RSI {rsi}   {rsi > 70} {macd < signal_line} {adx>20} {stoch> 80} {cci > 100} {(close_prices_15m.iloc[-1] < ema_15m or close_prices_15m.iloc[-1] < sar)} {result}")
-            logging.info(f"{close_prices_15m.iloc[-1] < ema_15m} {close_prices_15m.iloc[-1] < sar} {(result is None or not result)}")
         return
-    if rsi < 30:
-        logging.info(
-            f"Сигналів для {symbol} знайдено. RSI {rsi}   {rsi < 30} {macd > signal_line} {adx > 20} {stoch < 20} {cci < -100} {(close_prices_15m.iloc[-1] > ema_15m or close_prices_15m.iloc[-1] > sar)} {result}")
-        logging.info(
-            f"{close_prices_15m.iloc[-1] > ema_15m} {close_prices_15m.iloc[-1] > sar} {(result is None or result)}")
-
-    else:
-        logging.info(
-            f"Сигналів для {symbol} знайдено. RSI {rsi}   {rsi > 70} {macd < signal_line} {adx > 20} {stoch > 80} {cci > 100} {(close_prices_15m.iloc[-1] < ema_15m or close_prices_15m.iloc[-1] < sar)} {result}")
-        logging.info(
-            f"{close_prices_15m.iloc[-1] < ema_15m} {close_prices_15m.iloc[-1] < sar} {(result is None or not result)}")
-
     start_message = bot.send_message(
         TELEGRAM_CHAT_ID,
         text=(f"ВНИМАНИЕ СТАРТ СДЕЛКИ\n"
