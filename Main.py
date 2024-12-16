@@ -12,37 +12,38 @@ from config import Bot_token, admin_id, Text  # Импорт API ключей и
 bot = telebot.TeleBot(Bot_token)
 
 markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-New_search = telebot.types.KeyboardButton('Нова підбірка каналів')
-New_chanel = telebot.types.KeyboardButton('Новий канал')
-Ref_chanel = telebot.types.KeyboardButton('Реферальна програма')
-info_chanel = telebot.types.KeyboardButton('Інформація')
+New_search = telebot.types.KeyboardButton('🔍 Знайти канали')  # Для "Нова підбірка каналів"
+New_chanel = telebot.types.KeyboardButton('📺 Отримати канал')  # Для "Новий канал"
+Ref_chanel = telebot.types.KeyboardButton('🎁 Реферальна програма')  # Для "Реферальна програма"
+info_chanel = telebot.types.KeyboardButton('ℹ️ Про бота')  # Для "Інформація"
 markup.add(New_search, New_chanel, Ref_chanel, info_chanel)
 
 def create_markup_referal():
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(telebot.types.KeyboardButton('Створити реферальний код'))
-    markup.add(telebot.types.KeyboardButton('Ввести реферальний код'))
-    markup.add(telebot.types.KeyboardButton('Назад'))
+    markup.add(telebot.types.KeyboardButton('🆕 Створити код'))  # Для "Створити реферальний код"
+    markup.add(telebot.types.KeyboardButton('✅ Ввести код'))  # Для "Ввести реферальний код"
+    markup.add(telebot.types.KeyboardButton('🔙 Назад'))  # Для "Назад"
     return markup
 
 def create_markup():
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(telebot.types.KeyboardButton('Оновити API ключ'))
-    markup.add(telebot.types.KeyboardButton('Оновити пошукове слово'))
-    markup.add(telebot.types.KeyboardButton('Запустити пошук'))
-    markup.add(telebot.types.KeyboardButton('Переглянути дані'))
-    markup.add(telebot.types.KeyboardButton('Назад'))
+    markup.add(telebot.types.KeyboardButton('🔑 Оновити API-ключ'))  # Для "Оновити API ключ"
+    markup.add(telebot.types.KeyboardButton('✏️ Оновити пошукове слово'))  # Для "Оновити пошукове слово"
+    markup.add(telebot.types.KeyboardButton('🚀 Запустити пошук'))  # Для "Запустити пошук"
+    markup.add(telebot.types.KeyboardButton('📊 Мої дані'))  # Для "Переглянути дані"
+    markup.add(telebot.types.KeyboardButton('🔙 Назад'))  # Для "Назад"
     return markup
 markup_stop = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
 markup_stop_button = telebot.types.KeyboardButton('    ')
 markup_stop.add(markup_stop_button)
 
 markup_info = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-API_info = telebot.types.KeyboardButton('Що таке Api-key?')
-Frige_info = telebot.types.KeyboardButton('Хто такий фрідж?')
-rek_info = telebot.types.KeyboardButton('Реклама')
-back = telebot.types.KeyboardButton('Назад')
-markup_info.add(API_info, Frige_info, rek_info, back)
+API_info = telebot.types.KeyboardButton('🔑 Що таке API-ключ?')  # Для "Що таке Api-key?"
+Frige_info = telebot.types.KeyboardButton('🛒 Хто такий Фрідж?')  # Для "Хто такий фрідж?"
+rek_info = telebot.types.KeyboardButton('📢 Реклама')  # Для "Реклама"
+info_about_bot = telebot.types.KeyboardButton('🤖 Як працює бот?')  # Для "Як працює бот?"
+back = telebot.types.KeyboardButton('🔙 Назад')  # Для "Назад"
+markup_info.add(API_info, Frige_info, rek_info, info_about_bot, back)
 # Список шаблонів повідомлень
 channel_messages = [
     '''
@@ -261,7 +262,7 @@ def main_search(user_id):
         api_key, keyword = cur.fetchone()
 
     # Логіка пошуку каналів (приклад, ваш код тут)
-    bot.send_message(user_id, f"Пошук каналів за ключовим словом '{keyword}' із API ключем {api_key}...")
+    bot.send_message(user_id, f"🔍 Розпочинаю пошук YouTube-каналів за ключовим словом **'{keyword}'** за допомогою вашого API-ключа **{api_key}**. Будь ласка, зачекайте...")
     # Тут можна реалізувати пошук каналів на YouTube або іншому сервісі
 
 
@@ -273,9 +274,17 @@ def add_user_to_db(user_id, username, mes):
         if cur.fetchone() is None:  # Если пользователя нет в базе
             cur.execute("INSERT INTO users (id, username) VALUES (?, ?)", (user_id, username))
             print(f"Пользователь добавлен в базу данных: {user_id} с username {username}")
-            bot.send_message(mes, 'Привіт 🌝🤚.', reply_markup=markup)
+            bot.send_message(
+                mes,
+                "Привіт 🌝🤚! Радий познайомитися! Тепер ти в нашій базі даних.",
+                reply_markup=markup
+            )
         else:
-            bot.send_message(mes, 'Ми з тобою вже знайомі!', reply_markup=markup)
+            bot.send_message(
+                mes,
+                "Ми з тобою вже знайомі! 😉 Повертаємо тебе до меню.",
+                reply_markup=markup
+            )
 def add_user_to_db_ref(user_id, mes):
     with sq.connect("User_referal.db") as con:
         cur = con.cursor()
@@ -300,7 +309,11 @@ def is_user_registered(user_id):
 @bot.message_handler(commands=['start'])
 def Start(message):
     add_user_to_db(message.from_user.id, message.from_user.username, message.chat.id)  # Записуємо username
-    bot.send_message(message.from_user.id, "Удачних пошуків сищик)", reply_markup=markup)
+    bot.send_message(
+        message.chat.id,  # Використовуємо chat.id для універсальності
+        "Привіт! 🕵️‍♂️ Удачних пошуків, сищику! 😉 Якщо потрібна допомога, скористайся меню нижче.",
+        reply_markup=markup
+    )
 
 @bot.message_handler(commands=['start-sms'])
 def Start_sms(message):
@@ -309,7 +322,7 @@ def Start_sms(message):
         send_messages_to_users(message)
         channel_message = ''
 # Обробка натискання кнопки "Нова підбірка каналів"
-@bot.message_handler(func=lambda message: message.text == 'Нова підбірка каналів')
+@bot.message_handler(func=lambda message: message.text == '🔍 Знайти канали')
 def handle_new_collection(message):
     user_id = message.from_user.id
     # Перевіряємо, чи є користувач в базі
@@ -319,17 +332,25 @@ def handle_new_collection(message):
         user_data = cur.fetchone()
 
     if user_data:
-        bot.send_message(user_id, "Оберіть дію:", reply_markup=create_markup())
+        bot.send_message(
+            user_id,
+            "🤖 Оберіть дію зі списку нижче, щоб продовжити:",
+            reply_markup=create_markup()
+        )
     else:
         # Якщо користувача немає в базі, створюємо новий запис
         with sq.connect("User_data.db") as con:
             cur = con.cursor()
             cur.execute("INSERT INTO user_data (user_id, api_key, keyword, num_buy) VALUES (?, ?, ?, ?)", (user_id, '', '', 1))
             con.commit()
-        bot.send_message(user_id, "Оберіть дію:", reply_markup=create_markup())
+        bot.send_message(
+            user_id,
+            "🤖 Оберіть дію зі списку нижче, щоб продовжити:",
+            reply_markup=create_markup()
+        )
 
 # Обробка натискання кнопки "Оновити API ключ"
-@bot.message_handler(func=lambda message: message.text == 'Оновити API ключ')
+@bot.message_handler(func=lambda message: message.text == '🔑 Оновити API-ключ')
 def update_api_key(message):
     user_id = message.from_user.id
 
@@ -340,7 +361,7 @@ def update_api_key(message):
         api_key = cur.fetchone()
 
     if api_key:
-        bot.send_message(user_id, "Введіть новий API ключ:")
+        bot.send_message(user_id, "🔑 Введіть новий API ключ:")
         with sq.connect("User_data.db") as con:
             cur = con.cursor()
             cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (user_id,))
@@ -351,14 +372,14 @@ def update_api_key(message):
                                                         """, (message.from_user.id,))
             con.commit()
     else:
-        bot.send_message(user_id, "API ключ не знайдений. Створюємо новий запис.")
+        bot.send_message(user_id, "🔔 API ключ не знайдений. Створюємо новий запис у базі.")
         # Якщо API ключ не знайдений, запитуємо його
         with sq.connect("User_data.db") as con:
             cur = con.cursor()
             cur.execute("INSERT INTO user_data (user_id, api_key, keyword) VALUES (?, ?, ?)", (user_id, '', ''))
             con.commit()
 
-        bot.send_message(user_id, "Введіть новий API ключ:")
+        bot.send_message(user_id, "🔑 Введіть новий API ключ:")
         with sq.connect("User_data.db") as con:
             cur = con.cursor()
             cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (user_id,))
@@ -370,7 +391,7 @@ def update_api_key(message):
             con.commit()
 
 # Обробка натискання кнопки "Оновити пошукове слово"
-@bot.message_handler(func=lambda message: message.text == 'Оновити пошукове слово')
+@bot.message_handler(func=lambda message: message.text == '✏️ Оновити пошукове слово')
 def update_keyword(message):
     user_id = message.from_user.id
 
@@ -392,13 +413,20 @@ def update_keyword(message):
                                                         """, (message.from_user.id,))
             con.commit()
     else:
-        bot.send_message(user_id, "Пошукове слово не знайдено. Створюємо новий запис.")
+        bot.send_message(
+            user_id,
+            "🔍 Введіть нове ключове слово для пошуку YouTube-каналів. Це слово допоможе мені знайти релевантні канали для вас:",
+        )
          # Якщо пошукове слово не знайдено, запитуємо його
         with sq.connect("User_data.db") as con:
             cur = con.cursor()
             cur.execute("INSERT INTO user_data (user_id, api_key, keyword) VALUES (?, ?, ?)", (user_id, '', ''))
             con.commit()
-        bot.send_message(user_id, "Введіть нове ключове слово для пошуку каналів:")
+        bot.send_message(
+            user_id,
+            "❌ Пошукове слово не знайдено у вашому профілі. Створюємо новий запис, щоб ви могли почати пошук. 🔄 Введіть нове ключове слово для пошуку:"
+        )
+
         with sq.connect("User_data.db") as con:
             cur = con.cursor()
             cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (user_id,))
@@ -410,7 +438,7 @@ def update_keyword(message):
             con.commit()
 
 # Обробка натискання кнопки "Запустити пошук"
-@bot.message_handler(func=lambda message: message.text == 'Запустити пошук')
+@bot.message_handler(func=lambda message: message.text == '🚀 Запустити пошук')
 def start_search(message):
     user_id = message.from_user.id
 
@@ -424,14 +452,17 @@ def start_search(message):
         api_key, keyword = user_data
         if api_key and keyword:
             bot.send_message(user_id,
-                                f"Пошук за ключовим словом '{keyword}' із API ключем {api_key} розпочинається...")
+                             f"🧐 Починаю пошук за ключовим словом: '{keyword}' за допомогою API ключа {api_key}...")
             # Викликаємо функцію для пошуку каналів
             main_search(api_key, keyword, message)
         else:
-            bot.send_message(user_id, "Необхідно ввести API ключ та ключове слово перед запуском пошуку.")
+            bot.send_message(user_id,
+                             "❗ Помилка: перед запуском пошуку, будь ласка, введіть і API ключ, і ключове слово.")
     else:
         bot.send_message(user_id,
-                            "Ви ще не ввели API ключ або пошукове слово. Будь ласка, спочатку налаштуйте ці дані.")
+                         "⚠️ Ви ще не ввели необхідні дані! Спочатку налаштуйте API ключ і ключове слово.")
+
+
 start = 0
 keyword = ''
 api_key = ''
@@ -445,7 +476,9 @@ def main(message):
     time.sleep(1)  # Затримка в 1 секунду
 
     if not is_user_registered(message.from_user.id):
-        bot.send_message(message.chat.id, "Ви не зареєстровані! Будь ласка, введіть команду /start для реєстрації.")
+        bot.send_message(message.chat.id,
+                         "❗ Ви ще не зареєстровані! Для реєстрації, будь ласка, введіть команду /start.")
+
         return
 
     with sq.connect("Chanels_base.db") as con:
@@ -457,22 +490,29 @@ def main(message):
     if num_buy == 0:
         if start_ros == 1:
             channel_message = message.text
-            bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
+            bot.send_message(message.from_user.id,
+                             f"✅ Ваш текст для реклами успішно збережено:\n\n{channel_message}",
+                             reply_markup=markup)
+
             start_ros = 0
             send_messages_to_users(message)
-        if message.text == 'Реферальна програма':
-            bot.send_message(message.chat.id, '''
-Не забувай про реферальну систему нашого бота!
-За кожного користувача, якого ти приведеш, ти отримаєш +10 доступних каналів.
-                    ''', reply_markup=create_markup_referal())
+        if message.text == '🎁 Реферальна програма':
+            bot.send_message(message.chat.id,
+                             '''🚀 Не забувай про реферальну систему нашого бота!
+                             За кожного користувача, якого ти приведеш, ти отримаєш +10 додаткових каналів для доступу. 
+                             Запрошуй друзів та отримуй більше можливостей!''',
+                             reply_markup=create_markup_referal())
         elif message.text == 'Переглянути дані':
             with sq.connect("User_data.db") as con:
                 cur = con.cursor()
                 cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (message.chat.id,))
                 result = cur.fetchone()
                 api_key, keyword = result
-                bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}", reply_markup=markup)
-        elif message.text == 'Створити реферальний код':
+                bot.send_message(message.chat.id,
+                                 f"🔑 Ваш API ключ:\n{api_key}\n🔍 Ваше пошукове слово:\n{keyword}",
+                                 reply_markup=markup)
+
+        elif message.text == '🆕 Створити код':
             with sq.connect("User_referal.db") as con:
                 cur = con.cursor()
                 cur.execute("SELECT name_referal, add_num, join_referal FROM user_referal WHERE user_id = ?",
@@ -483,19 +523,19 @@ def main(message):
                     print(
                         f"Користувач: {message.from_user.id} з username {message.from_user.username} реферальний код {name_referal} кількість приглашоних {add_num}")
                     if join_referal == 0:
-                        bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
                         bot.send_message(message.chat.id,
-                                         f'{name_referal}')
+                                         '🎉 Ось ваш реферальний код:')
+                        bot.send_message(message.chat.id, f'💡 {name_referal}')
                         bot.send_message(message.chat.id,
-                                         f'Кількість доступних каналів по рефералці: {add_num}. Ви ще не ввели реферальний код друга.')
+                                         f'🔑 Кількість доступних каналів по рефералці: {add_num}. Ви ще не ввели реферальний код друга.')
                     else:
-                        bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
                         bot.send_message(message.chat.id,
-                                         f'{name_referal}')
+                                         '🎉 Ось ваш реферальний код:')
+                        bot.send_message(message.chat.id, f'💡 {name_referal}')
                         bot.send_message(message.chat.id,
-                                         f'Кількість доступних каналів по рефералці: {add_num}. Реферальний код, за яким ви приєдналися:')
-                        bot.send_message(message.chat.id,
-                                         f'{join_referal}.', reply_markup=create_markup_referal())
+                                         f'🔑 Кількість доступних каналів по рефералці: {add_num}. Реферальний код, за яким ви приєдналися:')
+                        bot.send_message(message.chat.id, f'📩 {join_referal}.', reply_markup=create_markup_referal())
+
                 else:
                     add_user_to_db_ref(message.from_user.id, message)
                     with sq.connect("User_referal.db") as con:
@@ -504,13 +544,13 @@ def main(message):
                                     (message.from_user.id,))
                         result = cur.fetchone()
                         name_referal, add_num = result
-                        bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
+                        bot.send_message(message.chat.id, '🎉 Ось ваш реферальний код:')
+                        bot.send_message(message.chat.id, f'💡 {name_referal}')
                         bot.send_message(message.chat.id,
-                                         f'{name_referal}')
-                        bot.send_message(message.chat.id,
-                                         f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.',
+                                         f'👥 Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.',
                                          reply_markup=create_markup_referal())
-        elif message.text == 'Ввести реферальний код':
+
+        elif message.text == '✅ Ввести код':
             with sq.connect("User_referal.db") as con:
                 cur = con.cursor()
                 cur.execute("SELECT join_referal FROM user_referal WHERE user_id = ?",
@@ -520,16 +560,16 @@ def main(message):
                     join_referal = result[0]
                     if join_referal == 0:
                         bot.send_message(message.chat.id,
-                                         f'Введіть реферальний код користувача який вас пригласив:',
+                                         '🔑 Введіть реферальний код користувача, який вас запросив:',
                                          reply_markup=markup_stop)
-
                     else:
                         bot.send_message(message.chat.id,
-                                         f'Ви вже ввели реферальний код: \n{join_referal}',
+                                         f'✅ Ви вже ввели реферальний код: \n{join_referal}',
                                          reply_markup=markup)
+
                 else:
                     add_user_to_db_ref(message.from_user.id, message)
-        elif message.text == 'Новий канал':
+        elif message.text == '📺 Отримати канал':
             with sq.connect("Chanels_base.db") as con:
                 cur = con.cursor()
 
@@ -619,7 +659,8 @@ def main(message):
                                                         (message.from_user.id,))
                                             result = cur.fetchone()  # fetchone() может вернуть None
                                             if result[0] > 0:
-                                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                                bot.send_message(message.chat.id, '🌟 Бажаю удачі! Нехай все вийде!', reply_markup=markup_stop)
+
                                                 print(
                                                     f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
                                                 process_channels(message, False)  # Викликаємо функцію обробки каналів
@@ -631,8 +672,11 @@ def main(message):
                                                             (message.from_user.id,))
                                                 con.commit()
                                             else:
-                                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
-                                                bot.send_message(message.chat.id, 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
+                                                bot.send_message(message.chat.id, '🌟 Бажаю удачі! Успіхів у пошуках!',
+                                                                 reply_markup=markup)
+                                                bot.send_message(message.chat.id,
+                                                                 '⚠️ Упс! Схоже, всі канали вичерпано. Створюйте власну підбірку каналів або придбайте преміум версію з готовою базою даних каналів у @vladuslavmen.')
+
                                                 print(f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
                                     except BaseException as e:
                                         add_user_to_db_ref(message.from_user.id, message)
@@ -654,15 +698,18 @@ def main(message):
                                                             (message.from_user.id,))
                                                 con.commit()
                                             else:
-                                                bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup)
+                                                bot.send_message(message.chat.id, '🌟 Бажаю удачі! Успіхів у пошуках!',
+                                                                 reply_markup=markup)
                                                 bot.send_message(message.chat.id,
-                                                                 'Упс! Схоже, всі канали вичерпано. Створюй власну підбірку каналів або придбай преміум версію з уже готовою базою даних каналів у @vladuslavmen.')
+                                                                 '⚠️ Упс! Схоже, всі канали вичерпано. Створюйте власну підбірку каналів або придбайте преміум версію з готовою базою даних каналів у @vladuslavmen.')
+
                                                 print(
                                                     f"Користувач досяг 20 каналів: {message.from_user.id} з username {message.from_user.username}")
                                 else:
                                     with sq.connect("Chanels_base.db") as con:
                                         cur = con.cursor()
-                                        bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
+                                        bot.send_message(message.chat.id, '🌟 Бажаю удачі! Нехай все вийде!', reply_markup=markup_stop)
+
                                         print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
                                         process_channels(message, False)  # Викликаємо функцію обробки каналів
                                         cur.execute("""
@@ -671,9 +718,11 @@ def main(message):
                                                                     WHERE id = ?
                                                                 """, (message.from_user.id,))
                                         con.commit()
-        elif message.text == 'Інформація':
+        elif message.text == 'ℹ️ Про бота':
             bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
-        elif message.text == 'Що таке Api-key?':
+        elif message.text == '🤖 Як працює бот?':
+            bot.send_message(message.chat.id, f'{Text[4]}', reply_markup=markup_info)
+        elif message.text == '🔑 Що таке API-ключ?':
             bot.send_message(message.chat.id, f'{Text[0]}', reply_markup=markup)
             video_path = "IMG_7671.MP4"
 
@@ -688,19 +737,19 @@ def main(message):
             except Exception as e:
                 bot.send_message(message.chat.id, "Не вдалося надіслати відео.")
                 print(f"Помилка: {e}")
-        elif message.text == 'Хто такий фрідж?':
+        elif message.text == '🛒 Хто такий Фрідж?':
             bot.send_message(message.chat.id, f'{Text[1]}', reply_markup=markup)
-        elif message.text == 'Реклама':
+        elif message.text == '📢 Реклама':
             bot.send_message(message.chat.id, f'{Text[2]}', reply_markup=markup)
-        elif message.text == 'Назад':
-            bot.send_message(message.chat.id, '<--', reply_markup=markup)
-        elif message.text == 'Переглянути дані':
-            with sq.connect("User_data.db") as con:
-                cur = con.cursor()
-                cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (message.chat.id,))
-                result = cur.fetchone()
-                api_key, keyword = result
-                bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}", reply_markup=markup)
+        elif message.text == '🔙 Назад':
+            bot.send_message(message.chat.id, '🔙 Назад', reply_markup=markup)
+        elif message.text == '📊 Мої дані':
+                with sq.connect("User_data.db") as con:
+                    cur = con.cursor()
+                    cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (message.chat.id,))
+                    result = cur.fetchone()
+                    api_key, keyword = result
+                    bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}", reply_markup=markup)
         else:
             with sq.connect("User_data.db") as con:
                 cur = con.cursor()
@@ -710,7 +759,8 @@ def main(message):
                     num_buy = num_buy[0]
             if num_buy == 3:
                 keyword = message.text
-                bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
+                bot.send_message(message.from_user.id,
+                                 f"✅ Пошукове слово успішно збережено:\n\n{keyword}")
                 with sq.connect("User_data.db") as con:
                     cur = con.cursor()
                     cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
@@ -723,7 +773,8 @@ def main(message):
                 main_search(api_key, keyword, message)
             elif num_buy == 2:
                 api_key = message.text
-                bot.send_message(message.from_user.id, f"API ключ збережено:\n\n{api_key}")
+                bot.send_message(message.from_user.id,
+                                 f"✅ Ваш API ключ успішно збережено:\n\n{api_key}")
                 with sq.connect("User_data.db") as con:
                     cur = con.cursor()
                     cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
@@ -749,7 +800,7 @@ def main(message):
                             if res[0] == key:
                                 if result1[0] == key:
                                     bot.send_message(message.chat.id,
-                                                     f'Ви ввели свій код: \n{key}',
+                                                     f'✅ Ви вже ввели свій код: \n{key}',
                                                      reply_markup=markup)
                                     return
                                 else:
@@ -760,8 +811,9 @@ def main(message):
                                                                         """, (key, message.from_user.id))
                                     con.commit()
                                     bot.send_message(message.chat.id,
-                                                     f'Ви успішно підключились по коду: \n{key}',
+                                                     f'✅ Ви успішно підключились за реферальним кодом: \n{key}',
                                                      reply_markup=markup)
+
                                     with sq.connect("User_referal.db") as con:
                                         cur = con.cursor()
                                         cur.execute("""
@@ -772,16 +824,20 @@ def main(message):
                                         con.commit()
                                     return
                         bot.send_message(message.chat.id,
-                                         f'Ви ввели не дійсний код: \n{key}',
+                                         f'❌ Ви ввели недійсний код: \n{key}',
                                          reply_markup=markup)
                 except Exception as e:
-                    bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
+                    bot.send_message(message.chat.id,
+                                     f'❗ Щось пішло не так. Будь ласка, спробуйте ще раз. Повідомлення: {message.text}',
+                                     reply_markup=markup)
             else:
-                bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
+                bot.send_message(message.chat.id,
+                                     f'❗ Не зрозуміле повідомлення: {message.text}',
+                                     reply_markup=markup)
         return  # Блокуємо подальші дії
 
     # Якщо num_buy = 1, перевіряємо текст повідомлення
-    if message.text == 'Новий канал':
+    if message.text == '📺 Отримати канал':
         with sq.connect("User_chanel.db") as con:
             cur = con.cursor()
             cur.execute("SELECT name_chanel, id_chanel FROM user_chanel WHERE user_id = ?",
@@ -810,25 +866,26 @@ def main(message):
                 bot.send_message(message.chat.id, 'Щасти!', reply_markup=markup_stop)
                 print(f"Користувач отримує канал: {message.from_user.id} з username {message.from_user.username}")
                 process_channels(message, True)  # Викликаємо функцію обробки каналів
-    elif message.text == 'Переглянути дані':
+    elif message.text == '📊 Мої дані':
         with sq.connect("User_data.db") as con:
             cur = con.cursor()
             cur.execute("SELECT api_key, keyword FROM user_data WHERE user_id = ?", (message.chat.id,))
             result = cur.fetchone()
             api_key, keyword = result
-            bot.send_message(message.chat.id, f"Ваш апі ключ:\n{api_key}\nВаше пошукове слово:\n{keyword}",
+            bot.send_message(message.chat.id,
+                             f'🔑 Ваш API ключ:\n{api_key}\n\n🔍 Ваше пошукове слово:\n{keyword}',
                              reply_markup=markup)
+
     elif start_ros == 1:
         channel_message = message.text
         bot.send_message(message.from_user.id, f"Текст для реклами збережено:\n\n{channel_message}", reply_markup=markup)
         start_ros = 0
         send_messages_to_users(message)
-    elif message.text == 'Реферальна програма':
-        bot.send_message(message.chat.id, '''
-Не забувай про реферальну систему нашого бота!
-За кожного користувача, якого ти приведеш, ти отримаєш +10 доступних каналів.
-        ''', reply_markup=create_markup_referal())
-    elif message.text == 'Створити реферальний код':
+    elif message.text == '🎁 Реферальна програма':
+        bot.send_message(message.chat.id, '''🎉 Не забувай про реферальну систему нашого бота!
+        За кожного користувача, якого ти приведеш, ти отримаєш +10 доступних каналів. 
+        Розпочни запрошувати та отримуй більше можливостей!''', reply_markup=create_markup_referal())
+    elif message.text == '🆕 Створити код':
         with sq.connect("User_referal.db") as con:
             cur = con.cursor()
             cur.execute("SELECT name_referal, add_num, join_referal FROM user_referal WHERE user_id = ?",
@@ -839,19 +896,21 @@ def main(message):
                 print(
                     f"Користувач: {message.from_user.id} з username {message.from_user.username} реферальний код {name_referal} кількість приглашоних {add_num}")
                 if join_referal == 0:
-                    bot.send_message(message.chat.id,f'Ось ваш реферальний код:')
                     bot.send_message(message.chat.id,
-                                     f'{name_referal}')
+                                     '🎁 Ось ваш реферальний код:')
                     bot.send_message(message.chat.id,
-                                     f'Кількість доступних каналів по рефералці: {add_num}. Ви ще не ввели реферальний код друга.')
+                                     f'🔑 {name_referal}')
+                    bot.send_message(message.chat.id,
+                                     f'📊 Кількість доступних каналів по рефералці: {add_num}. \n\nЩе не ввели реферальний код друга? Приєднуйся до програми та отримуй бонуси!')
                 else:
-                    bot.send_message(message.chat.id, f'Ось ваш реферальний код:')
                     bot.send_message(message.chat.id,
-                                     f'{name_referal}')
+                                     '🎁 Ось ваш реферальний код:')
                     bot.send_message(message.chat.id,
-                                     f'Кількість доступних каналів по рефералці: {add_num}. Реферальний код, за яким ви приєдналися:')
+                                     f'🔑 {name_referal}')
                     bot.send_message(message.chat.id,
-                                     f'{join_referal}.', reply_markup=create_markup_referal())
+                                     f'📊 Кількість доступних каналів по рефералці: {add_num}. \n\n🎯 Реферальний код, за яким ви приєдналися: {join_referal}.',
+                                     reply_markup=create_markup_referal())
+
             else:
                 add_user_to_db_ref(message.from_user.id, message)
                 with sq.connect("User_referal.db") as con:
@@ -864,9 +923,10 @@ def main(message):
                     bot.send_message(message.chat.id,
                                      f'{name_referal}')
                     bot.send_message(message.chat.id,
-                                     f'Кількість запрошених користувачів: {add_num}. Ви ще не ввели реферальний код друга.',
+                                     f'👥 Кількість запрошених користувачів: {add_num}. \n\nНе забувай ввести реферальний код друга, щоб отримати бонуси!',
                                      reply_markup=create_markup_referal())
-    elif message.text == 'Ввести реферальний код':
+
+    elif message.text == '✅ Ввести код':
         with sq.connect("User_referal.db") as con:
             cur = con.cursor()
             cur.execute("SELECT join_referal FROM user_referal WHERE user_id = ?",
@@ -876,18 +936,19 @@ def main(message):
                 join_referal = result[0]
                 if join_referal == 0:
                     bot.send_message(message.chat.id,
-                                 f'Введіть реферальний код користувача який вас пригласив:',
-                                 reply_markup=markup_stop)
-
+                                     '💬 Введіть реферальний код користувача, який вас запросив, щоб отримати бонуси:',
+                                     reply_markup=markup_stop)
                 else:
                     bot.send_message(message.chat.id,
-                                     f'Ви вже ввели реферальний код: \n{join_referal}',
+                                     f'✅ Ви вже ввели реферальний код: \n{join_referal}',
                                      reply_markup=markup)
             else:
                 add_user_to_db_ref(message.from_user.id, message)
-    elif message.text == 'Інформація':
+    elif message.text == 'ℹ️ Про бота':
         bot.send_message(message.chat.id, f'{Text[3]}', reply_markup=markup_info)
-    elif message.text == 'Що таке Api-key?':
+    elif message.text == '🤖 Як працює бот?':
+        bot.send_message(message.chat.id, f'{Text[4]}', reply_markup=markup_info)
+    elif message.text == '🔑 Що таке API-ключ?':
         bot.send_message(message.chat.id, f'{Text[0]}', reply_markup=markup)
         video_path = "IMG_7671.MP4"
 
@@ -902,9 +963,9 @@ def main(message):
         except Exception as e:
             bot.send_message(message.chat.id, "Не вдалося надіслати відео.")
             print(f"Помилка: {e}")
-    elif message.text == 'Хто такий фрідж?':
+    elif message.text == '🛒 Хто такий Фрідж?':
         bot.send_message(message.chat.id, f'{Text[1]}', reply_markup=markup)
-    elif message.text == 'Реклама':
+    elif message.text == '📢 Реклама':
         bot.send_message(message.chat.id, f'{Text[2]}', reply_markup=markup)
     elif start_ros == 1:
         channel_message = message.text
@@ -912,7 +973,7 @@ def main(message):
                          reply_markup=markup)
         start_ros = 0
         send_messages_to_users(message)
-    elif message.text == 'Назад':
+    elif message.text == '🔙 Назад':
         bot.send_message(message.chat.id, '<--', reply_markup=markup)
     else:
         with sq.connect("User_data.db") as con:
@@ -921,7 +982,9 @@ def main(message):
             num_buy = cur.fetchone()[0]
         if num_buy == 3:
             keyword = message.text
-            bot.send_message(message.from_user.id, f"Пошукове слово збережено:\n\n{keyword}")
+            bot.send_message(message.from_user.id,
+                             f'✅ Ваше пошукове слово успішно збережено:\n\n"{keyword}"\nТепер ви можете розпочати пошук!',
+                             reply_markup=markup)
             with sq.connect("User_data.db") as con:
                 cur = con.cursor()
                 cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
@@ -934,7 +997,9 @@ def main(message):
             main_search(api_key, keyword, message)
         elif num_buy == 2:
             api_key = message.text
-            bot.send_message(message.from_user.id, f"API ключ збережено:\n\n{api_key}")
+            bot.send_message(message.from_user.id,
+                             f'✅ Ваш API ключ успішно збережено:\n\n{api_key}\nТепер ви готові до пошуку!',
+                             reply_markup=markup)
             with sq.connect("User_data.db") as con:
                 cur = con.cursor()
                 cur.execute("SELECT num_buy FROM user_data WHERE user_id = ?", (message.chat.id,))
@@ -960,7 +1025,7 @@ def main(message):
                         if res[0] == key:
                             if result1[0] == key:
                                 bot.send_message(message.chat.id,
-                                                 f'Ви ввели свій код: \n{key}',
+                                                 f'🔑 Ви ввели свій реферальний код: \n{key}\nУспішно зареєстровано!',
                                                  reply_markup=markup)
                                 return
                             else:
@@ -971,8 +1036,9 @@ def main(message):
                                                             """, (key, message.from_user.id))
                                 con.commit()
                                 bot.send_message(message.chat.id,
-                                                 f'Ви успішно підключились по коду: \n{key}',
+                                                 f'🎉 Ви успішно підключились по реферальному коду: \n{key}\nТепер ви отримали додаткові переваги!',
                                                  reply_markup=markup)
+
                                 with sq.connect("User_referal.db") as con:
                                     cur = con.cursor()
                                     cur.execute("""
@@ -983,12 +1049,18 @@ def main(message):
                                     con.commit()
                                 return
                     bot.send_message(message.chat.id,
-                                     f'Ви ввели не дійсний код: \n{key}',
+                                     f'❌ Ви ввели недійсний код: \n{key}\nБудь ласка, перевірте введені дані та спробуйте ще раз.',
                                      reply_markup=markup)
+
             except Exception as e:
-                bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
+                bot.send_message(message.chat.id,
+                                 '⚠️ О, здається, ви надіслали непізнаний запит. Перевірте введені дані і спробуйте ще раз.',
+                                 reply_markup=markup)
+
         else:
-            bot.send_message(message.chat.id, f'Не зрозуміле повідомлення: {message.text}', reply_markup=markup)
+            bot.send_message(message.chat.id,
+                             '⚠️ О, здається, ви надіслали непізнаний запит. Перевірте введені дані і спробуйте ще раз.',
+                             reply_markup=markup)
 
 
 channels_file = 'Chanels.txt'
@@ -1005,7 +1077,9 @@ def process_channels(message, buy):
             cur.execute("SELECT num_newchanel FROM users WHERE id = ?", (message.from_user.id,))
             user_data = cur.fetchone()
             if not user_data:
-                bot.send_message(message.chat.id, "Виникла помилка. Будь ласка, спробуйте ще раз.")
+                bot.send_message(message.chat.id,
+                                 "❌ Виникла помилка. Будь ласка, перевірте введені дані і спробуйте ще раз.")
+
                 return
 
             num_newchanel = user_data[0]
@@ -1015,14 +1089,18 @@ def process_channels(message, buy):
 
             # Перевіряємо, чи є ще доступні канали
             if not channels:
-                bot.send_message(message.chat.id, "На жаль, канали для обробки закінчилися. Спробуйте пізніше.")
+                bot.send_message(message.chat.id,
+                                 "⚠️ На жаль, канали для обробки вичерпалися. Будь ласка, спробуйте пізніше.")
+
                 return
 
             # Отримуємо перший канал
             channel_line = channels[0]
             channel_parts = channel_line.split(',')
             if len(channel_parts) < 2:  # Перевірка формату
-                bot.send_message(message.chat.id, "Сталася помилка з даними каналу. Зверніться до адміністратора.")
+                bot.send_message(message.chat.id,
+                                 "❗ Сталася помилка з даними каналу. Будь ласка, зверніться до адміністратора для вирішення проблеми.")
+
                 return
 
             channel_id = channel_parts[0].strip()
@@ -1055,7 +1133,8 @@ def process_channels(message, buy):
             cur.execute("SELECT num_newchanel FROM users WHERE id = ?", (message.from_user.id,))
             user_data = cur.fetchone()
             if not user_data:
-                bot.send_message(message.chat.id, "Виникла помилка. Будь ласка, спробуйте ще раз.")
+                bot.send_message(message.chat.id,
+                                 "❌ Виникла помилка. Будь ласка, перевірте введені дані і спробуйте ще раз.")
                 return
 
             num_newchanel = user_data[0]
@@ -1065,14 +1144,16 @@ def process_channels(message, buy):
 
             # Перевіряємо, чи є ще доступні канали
             if not channels:
-                bot.send_message(message.chat.id, "На жаль, канали для обробки закінчилися. Спробуйте пізніше.")
+                bot.send_message(message.chat.id,
+                                 "⚠️ На жаль, канали для обробки вичерпалися. Будь ласка, спробуйте пізніше.")
                 return
 
             # Отримуємо перший канал
             channel_line = channels[random.randint(0, len(channels) - 1)]
             channel_parts = channel_line.split(',')
             if len(channel_parts) < 2:  # Перевірка формату
-                bot.send_message(message.chat.id, "Сталася помилка з даними каналу. Зверніться до адміністратора.")
+                bot.send_message(message.chat.id,
+                                 "❗ Сталася помилка з даними каналу. Будь ласка, зверніться до адміністратора для вирішення проблеми.")
                 return
 
             channel_id = channel_parts[0].strip()
@@ -1146,7 +1227,8 @@ def save_inactive_channel(channel_id, title, subscriber_count, total_watch_hours
     with open(INACTIVE_CHANNELS_FILE, 'a', encoding='utf-8') as file:
         file.write(f"{channel_id}, {title}, {subscriber_count}, {total_watch_hours} годин\n")
         print(f"Неактивний канал збережено: {title} (ID: {channel_id}), підписників: {subscriber_count}, годин перегляду: {total_watch_hours}")
-        bot.send_message(message.chat.id, f"Неактивний канал збережено. Ви отримали +1 до доступу.")
+        bot.send_message(message.chat.id,
+                         "✅ Неактивний канал збережено! Ви отримали +1 до доступу.")
         with sq.connect("User_chanel.db") as con:
             cur = con.cursor()
             cur.execute("INSERT INTO user_chanel (user_id, name_chanel, id_chanel) VALUES (?, ?, ?)", (message.chat.id, str(title), str(channel_id)))
@@ -1283,25 +1365,36 @@ def main_search(api_key, keyword, message):
     print(f"Используется API ключ: {api_key}")
     print(f"Запуск пошуку з ключовим словом: {keyword}")
 
-    bot.send_message(message.chat.id, f"Використовується API-ключ: {api_key} \nЗапуск пошуку за ключовим словом: {keyword}", reply_markup=markup_stop)
+    bot.send_message(message.chat.id,
+                     f"🔑 Використовується API-ключ: {api_key} \n🔍 Запуск пошуку за ключовим словом: {keyword}",
+                     reply_markup=markup_stop)
 
     bot.send_message(message.chat.id,
-                     f"Зачекайте будь ласка",
+                     "⏳ Зачекайте, будь ласка, пошук триває...",
                      reply_markup=markup_stop)
-    all_channel_ids, quota_status = search_channels_by_keyword(youtube, keyword, 300)
-    if quota_status == "quota_reached":
-        bot.send_message(message.chat.id, "Через досягнення квоти API-ключа пошук зупинено.", reply_markup=markup)
-    elif quota_status == "quota_None":
-        bot.send_message(message.chat.id, "Неправильний API-ключ.", reply_markup=markup)
 
+    all_channel_ids, quota_status = search_channels_by_keyword(youtube, keyword, 300)
+
+    if quota_status == "quota_reached":
+        bot.send_message(message.chat.id,
+                         "🚨 Досягнута квота API-ключа, пошук зупинено.",
+                         reply_markup=markup)
+    elif quota_status == "quota_None":
+        bot.send_message(message.chat.id,
+                         "❌ Неправильний API-ключ. Перевірте його.",
+                         reply_markup=markup)
 
     for channel_id in all_channel_ids:
         status = check_channel_activity(youtube, channel_id, checked_channels, api_key, message)
         if status == "quota_reached" or status == "timeout":
-            bot.send_message(message.chat.id, "Через досягнення квоти API-ключа пошук зупинено.", reply_markup=markup)
+            bot.send_message(message.chat.id,
+                             "🚨 Досягнута квота API-ключа, пошук зупинено.",
+                             reply_markup=markup)
+
     bot.send_message(message.chat.id,
-                     f"Пошук каналів припинено",
+                     "🔚 Пошук каналів припинено.",
                      reply_markup=markup)
+
 # Запуск бота
 res = True
 while res:
