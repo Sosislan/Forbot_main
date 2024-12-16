@@ -445,7 +445,7 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
     else:
         multipliers = [0.4, 0.6, 0.8]  # Стандартний варіант
     result = analyze_news_impact(symbol)
-
+    print(symbol, close_prices_15m.iloc[-1], trend, rsi, macd, signal_line, adx,stoch, cci, ema_15m, sar)
     # Визначення сигналів для покупки або продажу
     if (trend == "bullish" and rsi < 30 and macd > signal_line and adx > 18 and stoch < 22 and cci < -90 and
             close_prices_15m.iloc[-1] > ema_15m * 1 and close_prices_15m.iloc[-1] > sar * 1 and (
