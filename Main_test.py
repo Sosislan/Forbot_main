@@ -437,24 +437,24 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
 
     # Налаштування коефіцієнтів залежно від ADX і ATR
     if atr < low_volatility and not strong_trend:
-        multipliers = [1, 1.3, 1.7]  # Слабкий тренд + низька волатильність (агресивні цілі)
+        multipliers = [0.4, 0.6, 0.8]  # Слабкий тренд + низька волатильність (агресивні цілі)
     elif atr > high_volatility and strong_trend:
-        multipliers = [0.8, 1, 1.2]  # Сильний тренд + висока волатильність (консервативні цілі)
+        multipliers = [0.4, 0.6, 0.8]  # Сильний тренд + висока волатильність (консервативні цілі)
     elif atr < low_volatility and strong_trend:
-        multipliers = [1, 1.3, 1.7]  # Сильний тренд + низька волатильність
+        multipliers = [0.4, 0.6, 0.8]  # Сильний тренд + низька волатильність
     else:
         multipliers = [0.4, 0.6, 0.8]  # Стандартний варіант
     result = analyze_news_impact(symbol)
-    print(symbol, close_prices_15m.iloc[-1], trend, rsi, macd, signal_line, adx,stoch, cci, ema_15m, sar)
+    print(symbol, close_prices_15m.iloc[-1], trend, rsi, macd, signal_line, adx,stoch, cci, ema_15m, sar, result)
     # Визначення сигналів для покупки або продажу
     if (trend == "bullish" and rsi < 30 and macd > signal_line and adx > 18 and stoch < 22 and cci < -90 and
-            close_prices_15m.iloc[-1] > ema_15m * 1 and close_prices_15m.iloc[-1] > sar * 1 and (
+            close_prices_15m.iloc[-1] > ema_15m * 1.2 and close_prices_15m.iloc[-1] > sar * 1.2 and (
                     result is None or result)):
         direction = "LONG/BUY⬆️"
         stop_loss = close_prices_15m.iloc[-1] - atr * atr_multiplier
         targets = [close_prices_15m.iloc[-1] + atr * atr_multiplier * i for i in multipliers]
-    elif (trend == "bearish" and rsi > 70 and macd < signal_line  and adx > 18 and stoch > 78 and cci > 90 and
-          close_prices_15m.iloc[-1] < ema_15m * 1 and close_prices_15m.iloc[-1] < sar * 1 and (
+    elif (trend == "bearish" and rsi > 70 and macd < signal_line and adx > 18 and stoch > 78 and cci > 90 and
+          close_prices_15m.iloc[-1] < ema_15m * 1.2 and close_prices_15m.iloc[-1] < sar * 1.2 and (
                   result is None or not result)):
         direction = "SHORT/SELL⬇️"
         stop_loss = close_prices_15m.iloc[-1] + atr * atr_multiplier
@@ -470,7 +470,7 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
               f"Плечи: x{leverage}\n"
               f"РМ: 5.0%\n"
               f"Цена входа {close_prices_15m.iloc[-1]}\n"
-              f"SL: {stop_loss}"
+              f"Stopp-loss: {stop_loss}\n"
               f"Цель 1: {targets[0]} \n"
               f"Цель 2: {targets[1]} \n "
               f"Цель 3: {targets[2]} \n")
@@ -485,7 +485,13 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
             if len(targets) >= 3:
                 bot.send_message(
                     TELEGRAM_CHAT_ID,
-                    text=f"Ціль {targets.pop(0)} досягнута!\nСтоп лосс поставил к TBX",
+                    text=f"Ціль {targets.pop(0)} досягнута!\nЗакрив 70% ставок.\nСтоп лосс поставил к TBX",
+                    reply_to_message_id=start_message_id  # Відповідь на початкове повідомлення
+                )
+            elif len(targets) == 1:
+                bot.send_message(
+                    TELEGRAM_CHAT_ID,
+                    text=f"Ціль {targets.pop(0)} досягнута!\nВсі цілі закриті, вітаю!!!",
                     reply_to_message_id=start_message_id  # Відповідь на початкове повідомлення
                 )
             bot.send_message(
@@ -497,7 +503,13 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
             if len(targets) >= 3:
                 bot.send_message(
                     TELEGRAM_CHAT_ID,
-                    text=f"Ціль {targets.pop(0)} досягнута!\nСтоп лосс поставил к TBX",
+                    text=f"Ціль {targets.pop(0)} досягнута!\nЗакрив 70% ставок.\nСтоп лосс поставил к TBX",
+                    reply_to_message_id=start_message_id  # Відповідь на початкове повідомлення
+                )
+            elif len(targets) == 1:
+                bot.send_message(
+                    TELEGRAM_CHAT_ID,
+                    text=f"Ціль {targets.pop(0)} досягнута!\nВсі цілі закриті, вітаю!!!",
                     reply_to_message_id=start_message_id  # Відповідь на початкове повідомлення
                 )
             bot.send_message(
@@ -518,73 +530,76 @@ def trade_with_targets(symbol, leverage=20, atr_multiplier=1.5):
 
 # Основний цикл
 while True:
-    for symbol in [
-    'DOGE/USDT', 'SHIB/USDT', 'SOL/USDT', 'LTC/USDT', 'XRP/USDT',
-    'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LUNA/USDT', 'VET/USDT',
-    'FIL/USDT', 'TRX/USDT', 'LINK/USDT', 'BNB/USDT', 'ATOM/USDT',
-    'UNI/USDT', 'AAVE/USDT', 'ALGO/USDT', 'FTT/USDT', 'BTC/USDT',
-    'ETH/USDT', 'MKR/USDT', 'SUSHI/USDT', 'TWT/USDT', 'BCH/USDT',
-    'STMX/USDT', 'GRT/USDT', 'STPT/USDT', 'VTHO/USDT', 'MITH/USDT',
-    'NKN/USDT', 'KSM/USDT', 'KAVA/USDT', 'LEND/USDT', 'MANA/USDT',
-    'ZRX/USDT', 'XLM/USDT', 'SAND/USDT', 'MATIC/USDT',
-    'GALA/USDT', 'FET/USDT', 'IOST/USDT', 'KNC/USDT', 'BNT/USDT',
-    'CTSI/USDT', 'KDA/USDT', 'RUNE/USDT', 'FLOW/USDT', 'SUSHI/USDT',
-    'PERL/USDT', 'STPT/USDT', 'GMT/USDT', 'NEAR/USDT',
-    'LEND/USDT', 'KSM/USDT', 'MITH/USDT', 'VTHO/USDT', 'FET/USDT',
-    'HNT/USDT', 'FLOKI/USDT', 'DGB/USDT', 'SAND/USDT', 'XNO/USDT',
-    'QTUM/USDT', 'YFI/USDT', 'ICP/USDT', 'PAXG/USDT',
-    'STMX/USDT', 'REEF/USDT', 'SNT/USDT', 'YGG/USDT',
-    'STPT/USDT', 'ZRX/USDT', 'XEM/USDT', 'BAND/USDT', 'PERL/USDT',
-    'DOCK/USDT', 'MDX/USDT', 'VET/USDT', 'TWT/USDT',
-    'AAVE/USDT', 'MKR/USDT', 'CVC/USDT', 'TRB/USDT', 'SKL/USDT',
-    'EGLD/USDT', 'TWT/USDT', 'SHIB/USDT', 'COTI/USDT', 'FIL/USDT', 'AAVE/USDT',
-    'YFI/USDT', 'ZRX/USDT', 'SKL/USDT', 'CHZ/USDT', 'BAND/USDT'
-]:
-        trade_with_targets(symbol)
-
-        # Затримка між циклами для уникнення перевантаження API
-    tm.sleep(2)
-    for symbol in [
-        "CAKE/USDT", "BAL/USDT", "COMP/USDT", "ZEN/USDT", "BAT/USDT",
-        "REN/USDT", "OCEAN/USDT", "WOO/USDT", "ALICE/USDT", "SLP/USDT",
-        "LPT/USDT", "DODO/USDT", "BEL/USDT", "CTK/USDT", "FIO/USDT",
-        "BETA/USDT", "LDO/USDT", "CFX/USDT", "MINA/USDT", "IMX/USDT",
-        "ENS/USDT", "ALPHA/USDT", "TLM/USDT", "MASK/USDT", "LOKA/USDT",
-        "POND/USDT", "LTO/USDT", "NMR/USDT", "ONG/USDT", "ONT/USDT",
-        "HOT/USDT", "RVN/USDT", "REQ/USDT", "QNT/USDT", "JST/USDT",
-        "HBAR/USDT", "ICX/USDT", "ROSE/USDT", "KLAY/USDT", "APE/USDT", "GLMR/USDT", "FTM/USDT", "SNX/USDT",
-        "ZIL/USDT", "CHR/USDT", "PHA/USDT", "PROM/USDT", "SC/USDT",
-        "DENT/USDT", "PERP/USDT", "ARPA/USDT", "LINA/USDT", "BAKE/USDT",
-        "SXP/USDT", "XTZ/USDT", "AXS/USDT", "ENJ/USDT", "ILV/USDT",
-        "OXT/USDT", "CKB/USDT", "MTL/USDT", "FIRO/USDT", "STG/USDT",
-        "BLZ/USDT", "CELR/USDT"
+    try:
+        for symbol in [
+        'DOGE/USDT', 'SHIB/USDT', 'SOL/USDT', 'LTC/USDT', 'XRP/USDT',
+        'ADA/USDT', 'AVAX/USDT', 'DOT/USDT', 'LUNA/USDT', 'VET/USDT',
+        'FIL/USDT', 'TRX/USDT', 'LINK/USDT', 'BNB/USDT', 'ATOM/USDT',
+        'UNI/USDT', 'AAVE/USDT', 'ALGO/USDT', 'FTT/USDT', 'BTC/USDT',
+        'ETH/USDT', 'MKR/USDT', 'SUSHI/USDT', 'TWT/USDT', 'BCH/USDT',
+        'STMX/USDT', 'GRT/USDT', 'STPT/USDT', 'VTHO/USDT', 'MITH/USDT',
+        'NKN/USDT', 'KSM/USDT', 'KAVA/USDT', 'LEND/USDT', 'MANA/USDT',
+        'ZRX/USDT', 'XLM/USDT', 'SAND/USDT', 'MATIC/USDT',
+        'GALA/USDT', 'FET/USDT', 'IOST/USDT', 'KNC/USDT', 'BNT/USDT',
+        'CTSI/USDT', 'KDA/USDT', 'RUNE/USDT', 'FLOW/USDT', 'SUSHI/USDT',
+        'PERL/USDT', 'STPT/USDT', 'GMT/USDT', 'NEAR/USDT',
+        'LEND/USDT', 'KSM/USDT', 'MITH/USDT', 'VTHO/USDT', 'FET/USDT',
+        'HNT/USDT', 'FLOKI/USDT', 'DGB/USDT', 'SAND/USDT', 'XNO/USDT',
+        'QTUM/USDT', 'YFI/USDT', 'ICP/USDT', 'PAXG/USDT',
+        'STMX/USDT', 'REEF/USDT', 'SNT/USDT', 'YGG/USDT',
+        'STPT/USDT', 'ZRX/USDT', 'XEM/USDT', 'BAND/USDT', 'PERL/USDT',
+        'DOCK/USDT', 'MDX/USDT', 'VET/USDT', 'TWT/USDT',
+        'AAVE/USDT', 'MKR/USDT', 'CVC/USDT', 'TRB/USDT', 'SKL/USDT',
+        'EGLD/USDT', 'TWT/USDT', 'SHIB/USDT', 'COTI/USDT', 'FIL/USDT', 'AAVE/USDT',
+        'YFI/USDT', 'ZRX/USDT', 'SKL/USDT', 'CHZ/USDT', 'BAND/USDT'
     ]:
-        trade_with_targets(symbol)
+            trade_with_targets(symbol)
 
-        # Затримка між циклами для уникнення перевантаження API
-    tm.sleep(2)
-    for symbol in [
-        "ACH/USDT", "AGIX/USDT", "AMP/USDT", "ANKR/USDT", "API3/USDT",
-        "AR/USDT", "ATA/USDT", "AUCTION/USDT", "AVA/USDT",
-         "BAR/USDT", "BICO/USDT", "BNX/USDT",
-        "BTS/USDT", "BTTC/USDT", "C98/USDT",
-        "CITY/USDT", "CREAM/USDT","DAR/USDT",
-        "DATA/USDT", "DEGO/USDT", "DF/USDT", "DNT/USDT",
-        "DYDX/USDT", "ELF/USDT", "ERN/USDT",
-        "FARM/USDT", "FOR/USDT", "FORTH/USDT", "GAS/USDT", "GMX/USDT",
-        "GNO/USDT", "GTC/USDT", "HIGH/USDT", "HIVE/USDT", "IDEX/USDT",
-        "INJ/USDT", "IQ/USDT", "JASMY/USDT", "JOE/USDT", "KMD/USDT",
-        "KP3R/USDT", "LAZIO/USDT", "LEVER/USDT", "LIT/USDT",
-        "LRC/USDT", "MBOX/USDT", "MC/USDT", "MDT/USDT", "MOVR/USDT",
-        "OG/USDT", "OGN/USDT", "OOKI/USDT", "OP/USDT",
-        "PEOPLE/USDT", "POWR/USDT", "PUNDIX/USDT", "PYR/USDT", "QKC/USDT",
-        "RAD/USDT", "RAMP/USDT", "RGT/USDT", "RNDR/USDT",
-        "RSR/USDT", "SPELL/USDT", "SRM/USDT",
-        "SUN/USDT", "SUPER/USDT", "SYN/USDT", "T/USDT", "TRIBE/USDT",
-         "UNFI/USDT", "UTK/USDT", "WIN/USDT",
-        "XEC/USDT", "XVG/USDT"
-    ]:
-        trade_with_targets(symbol)
+            # Затримка між циклами для уникнення перевантаження API
+        tm.sleep(2)
+        for symbol in [
+            "CAKE/USDT", "BAL/USDT", "COMP/USDT", "ZEN/USDT", "BAT/USDT",
+            "REN/USDT", "OCEAN/USDT", "WOO/USDT", "ALICE/USDT", "SLP/USDT",
+            "LPT/USDT", "DODO/USDT", "BEL/USDT", "CTK/USDT", "FIO/USDT",
+            "BETA/USDT", "LDO/USDT", "CFX/USDT", "MINA/USDT", "IMX/USDT",
+            "ENS/USDT", "ALPHA/USDT", "TLM/USDT", "MASK/USDT", "LOKA/USDT",
+            "POND/USDT", "LTO/USDT", "NMR/USDT", "ONG/USDT", "ONT/USDT",
+            "HOT/USDT", "RVN/USDT", "REQ/USDT", "QNT/USDT", "JST/USDT",
+            "HBAR/USDT", "ICX/USDT", "ROSE/USDT", "KLAY/USDT", "APE/USDT", "GLMR/USDT", "FTM/USDT", "SNX/USDT",
+            "ZIL/USDT", "CHR/USDT", "PHA/USDT", "PROM/USDT", "SC/USDT",
+            "DENT/USDT", "PERP/USDT", "ARPA/USDT", "LINA/USDT", "BAKE/USDT",
+            "SXP/USDT", "XTZ/USDT", "AXS/USDT", "ENJ/USDT", "ILV/USDT",
+            "OXT/USDT", "CKB/USDT", "MTL/USDT", "FIRO/USDT", "STG/USDT",
+            "BLZ/USDT", "CELR/USDT"
+        ]:
+            trade_with_targets(symbol)
 
-        # Затримка між циклами для уникнення перевантаження API
-    tm.sleep(2)
+            # Затримка між циклами для уникнення перевантаження API
+        tm.sleep(2)
+        for symbol in [
+            "ACH/USDT", "AGIX/USDT", "AMP/USDT", "ANKR/USDT", "API3/USDT",
+            "AR/USDT", "ATA/USDT", "AUCTION/USDT", "AVA/USDT",
+             "BAR/USDT", "BICO/USDT", "BNX/USDT",
+            "BTS/USDT", "BTTC/USDT", "C98/USDT",
+            "CITY/USDT", "CREAM/USDT","DAR/USDT",
+            "DATA/USDT", "DEGO/USDT", "DF/USDT", "DNT/USDT",
+            "DYDX/USDT", "ELF/USDT", "ERN/USDT",
+            "FARM/USDT", "FOR/USDT", "FORTH/USDT", "GAS/USDT", "GMX/USDT",
+            "GNO/USDT", "GTC/USDT", "HIGH/USDT", "HIVE/USDT", "IDEX/USDT",
+            "INJ/USDT", "IQ/USDT", "JASMY/USDT", "JOE/USDT", "KMD/USDT",
+            "KP3R/USDT", "LAZIO/USDT", "LEVER/USDT", "LIT/USDT",
+            "LRC/USDT", "MBOX/USDT", "MC/USDT", "MDT/USDT", "MOVR/USDT",
+            "OG/USDT", "OGN/USDT", "OOKI/USDT", "OP/USDT",
+            "PEOPLE/USDT", "POWR/USDT", "PUNDIX/USDT", "PYR/USDT", "QKC/USDT",
+            "RAD/USDT", "RAMP/USDT", "RGT/USDT", "RNDR/USDT",
+            "RSR/USDT", "SPELL/USDT", "SRM/USDT",
+            "SUN/USDT", "SUPER/USDT", "SYN/USDT", "T/USDT", "TRIBE/USDT",
+             "UNFI/USDT", "UTK/USDT", "WIN/USDT",
+            "XEC/USDT", "XVG/USDT"
+        ]:
+            trade_with_targets(symbol)
+
+            # Затримка між циклами для уникнення перевантаження API
+        tm.sleep(2)
+    except Exception as e:
+        print({e})
