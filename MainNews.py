@@ -2,7 +2,7 @@ import time
 import schedule
 import requests
 from datetime import datetime, timedelta
-from translate import Translator
+import translate
 from telebot import TeleBot
 from config import Bot_token, News_API_TOKEN
 
@@ -12,7 +12,7 @@ TELEGRAM_CHAT_ID = "@testcrupto"  # Ваш Telegram-канал/чат
 NEWSAPI_URL = "https://newsapi.org/v2/everything"
 NEWSAPI_KEY = News_API_TOKEN  # Ваш токен NewsAPI
 bot = TeleBot(TELEGRAM_TOKEN)
-translator = Translator(to_lang="ru")
+translator = translate.Translator(to_lang="ru")
 published_urls = set()  # Збереження URL вже опублікованих новин
 
 def get_crypto_news():

@@ -2,7 +2,7 @@ import time
 import schedule
 import requests
 from datetime import datetime, timedelta
-from translate import Translator
+import translate
 from telebot import TeleBot
 from config import Bot_token, COINGECKO_API_TOKEN
 
@@ -12,7 +12,7 @@ TELEGRAM_CHAT_ID = "@testcrupto"
 COINGECKO_API_URL = "https://cryptopanic.com/api/v1/posts/"
 COINGECKO_API_TOKEN = COINGECKO_API_TOKEN
 bot = TeleBot(TELEGRAM_TOKEN)
-translator = Translator(to_lang="ru")  # Налаштовуємо переклад на українську
+translator = translate.Translator(to_lang="ru")  # Налаштовуємо переклад на українську
 published_ids = set()  # Збереження ID опублікованих новин
 
 def get_crypto_news():
